@@ -19,15 +19,6 @@ const availablePairs = computed<string[]>(() => {
     if (chartStore.useLiveData) {
       return Object.keys(markets.value?.markets || {}).sort() || [];
     }
-    if (finalTimeframe.value && finalTimeframe.value !== '') {
-      const tf = finalTimeframe.value;
-      return botStore.activeBot.pairlistWithTimeframe
-        .filter(([_, timeframe]) => {
-          // console.log(pair, timeframe, tf);
-          return timeframe === tf;
-        })
-        .map(([pair]) => pair);
-    }
     return botStore.activeBot.pairlist;
   }
   return botStore.activeBot.whitelist;
@@ -50,9 +41,8 @@ function refreshOHLCV(pair: string, columns: string[]) {
       timeframe: finalTimeframe.value,
       timerange: chartStore.timerange,
       strategy: chartStore.strategy,
-      // freqaimodel: freqaiModel.value,
       columns: columns,
-      live_mode: chartStore.useLiveData,
+      live_mode: true,
     };
     if (exchange.value.customExchange) {
       payload.exchange = exchange.value.selectedExchange.exchange;
