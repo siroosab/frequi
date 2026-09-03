@@ -1,31 +1,18 @@
 <script setup lang="ts">
 interface Props {
   value?: string;
-  modelValue?: string;
   belowTimeframe?: string;
-  aboveTimeframe?: string;
   size?: undefined | 'sm' | 'md' | 'lg' | 'xl';
 }
 
 const props = withDefaults(defineProps<Props>(), {
   value: '',
-  modelValue: undefined,
   belowTimeframe: '',
-  aboveTimeframe: '',
   size: undefined,
 });
-const emit = defineEmits<{
-  input: [value: string];
-  'update:modelValue': [value: string];
-}>();
+const emit = defineEmits<{ input: [value: string] }>();
 
-const selectedTimeframe = computed({
-  get: () => props.modelValue ?? props.value ?? '',
-  set: (value: string) => {
-    emit('update:modelValue', value);
-    emit('input', value);
-  },
-});
+const selectedTimeframe = ref('');
 // The below list must always remain sorted correctly!
 const availableTimeframesBase = [
   // Placeholder value
@@ -50,17 +37,17 @@ const availableTimeframesBase = [
 ];
 
 const availableTimeframes = computed(() => {
-  let timeframes = availableTimeframesBase;
-  if (props.belowTimeframe) {
-    const idx = timeframes.findIndex((v) => v.value === props.belowTimeframe);
-    if (idx >= 0) timeframes = timeframes.slice(0, idx);
+  if (!props.belowTimeframe) {
+    return availableTimeframesBase;
   }
-  if (props.aboveTimeframe) {
-    const idx = timeframes.findIndex((v) => v.value === props.aboveTimeframe);
-    if (idx >= 0) timeframes = timeframes.slice(idx + 1);
-  }
-  return timeframes;
+  const idx = availableTimeframesBase.findIndex((v) => v.value === props.belowTimeframe);
+
+  return [...availableTimeframesBase].splice(0, idx);
 });
+
+const emitSelectedTimeframe = () => {
+  emit('input', selectedTimeframe.value);
+};
 </script>
 
 <template>
@@ -69,5 +56,6 @@ const availableTimeframes = computed(() => {
     placeholder="Use strategy default"
     :size="size"
     :items="availableTimeframes"
+    @change="emitSelectedTimeframe"
   ></USelect>
 </template>

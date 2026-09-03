@@ -1,23 +1,28 @@
 <script setup lang="ts">
 import { MarginMode, TradingMode } from '@/types';
 import type { ExchangeSelection, Markets, MarketsPayload, PairHistoryPayload } from '@/types';
-import { resolveDisplayTimeframe } from '@/utils/charts/chartTimeframe';
 
 const botStore = useBotStore();
 const chartStore = useChartConfigStore();
 
 const finalTimeframe = computed<string>(() => {
-  const base = botStore.activeBot.isWebserverMode
-    ? botStore.activeBot.strategy?.timeframe || ''
+  return botStore.activeBot.isWebserverMode
+    ? chartStore.selectedTimeframe || botStore.activeBot.strategy?.timeframe || ''
     : botStore.activeBot.timeframe;
-
-  return resolveDisplayTimeframe(chartStore.selectedTimeframe, base);
 });
 
 const availablePairs = computed<string[]>(() => {
   if (botStore.activeBot.isWebserverMode) {
     if (chartStore.useLiveData) {
       return Object.keys(markets.value?.markets || {}).sort() || [];
+    }
+    if (finalTimeframe.value && finalTimeframe.value !== '') {
+      const tf = finalTimeframe.value;
+      return botStore.activeBot.pairlistWithTimeframe
+        .filter(([_, timeframe]) => {
+          return timeframe === tf;
+        })
+        .map(([pair]) => pair);
     }
     return botStore.activeBot.pairlist;
   }
@@ -41,8 +46,9 @@ function refreshOHLCV(pair: string, columns: string[]) {
       timeframe: finalTimeframe.value,
       timerange: chartStore.timerange,
       strategy: chartStore.strategy,
+      // freqaimodel: freqaiModel.value,
       columns: columns,
-      live_mode: true,
+      live_mode: chartStore.useLiveData,
     };
     if (exchange.value.customExchange) {
       payload.exchange = exchange.value.selectedExchange.exchange;
