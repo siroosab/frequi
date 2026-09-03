@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { MarginMode, TradingMode } from '@/types';
 import type { ExchangeSelection, Markets, MarketsPayload, PairHistoryPayload } from '@/types';
+import { resolveDisplayTimeframe } from '@/utils/charts/chartTimeframe';
 
 const botStore = useBotStore();
 const chartStore = useChartConfigStore();
 
 const finalTimeframe = computed<string>(() => {
-  return botStore.activeBot.isWebserverMode
-    ? chartStore.selectedTimeframe || botStore.activeBot.strategy?.timeframe || ''
+  const base = botStore.activeBot.isWebserverMode
+    ? botStore.activeBot.strategy?.timeframe || ''
     : botStore.activeBot.timeframe;
+
+  return resolveDisplayTimeframe(chartStore.selectedTimeframe, base);
 });
 
 const availablePairs = computed<string[]>(() => {
