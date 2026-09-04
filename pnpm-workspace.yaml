@@ -11,6 +11,7 @@ preferFrozenLockfile: true
 allowBuilds:
   '@parcel/watcher': true
   '@tailwindcss/oxide': true
+  ccxt: true
   esbuild: true
   vue-demi: true
 
