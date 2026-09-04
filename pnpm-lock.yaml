@@ -36,6 +36,9 @@ importers:
       axios:
         specifier: ^1.19.0
         version: 1.19.0(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
+      ccxt:
+        specifier: ^4.5.22
+        version: 4.5.22
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
@@ -153,6 +156,10 @@ importers:
         version: 3.3.11(typescript@6.0.3)
 
 packages:
+
+  ccxt@4.5.22:
+    resolution: {integrity: sha512-genZ6GBcjV3wZDlY87ItsuIp39doW8H3Eot4p/ChmOEbOwRBhR8uda93wtB3qNRBv4Nrx7qXV28qa0zbVsu6yw==}
+    engines: {node: '>=15.0.0'}
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -3564,6 +3571,10 @@ packages:
     resolution: {integrity: sha512-oEGMDB6pOP2S6OwRR4PdVv610zrjnA3Bh+JnSG12fYJlBKjtNAoEb5fSUoCOOINlH96I2fU38/A2UpRKs67xYQ==}
 
 snapshots:
+
+  ccxt@4.5.22:
+    dependencies:
+      ws: 8.21.3
 
   '@alloc/quick-lru@5.2.0': {}
 
