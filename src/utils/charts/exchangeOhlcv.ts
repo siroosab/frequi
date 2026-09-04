@@ -21,6 +21,33 @@ type CcxtExchange = {
   close: () => Promise<void>;
 };
 
+type CcxtBrowser = {
+  [exchangeId: string]: new (options?: object) => CcxtExchange;
+};
+
+declare global {
+  interface Window {
+    ccxt?: CcxtBrowser;
+  }
+}
+
+let ccxtLoad: Promise<CcxtBrowser> | undefined;
+
+function loadCcxtBrowser(): Promise<CcxtBrowser> {
+  if (window.ccxt) return Promise.resolve(window.ccxt);
+  if (ccxtLoad) return ccxtLoad;
+
+  ccxtLoad = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/ccxt@4.5.22/dist/ccxt.browser.min.js';
+    script.async = true;
+    script.onload = () => (window.ccxt ? resolve(window.ccxt) : reject(new Error('CCXT failed to load')));
+    script.onerror = () => reject(new Error('Unable to load CCXT browser bundle'));
+    document.head.appendChild(script);
+  });
+  return ccxtLoad;
+}
+
 const TIMEFRAME_MS: Record<string, number> = {
   '1m': 60_000,
   '3m': 180_000,
@@ -65,10 +92,8 @@ export async function fetchExchangeOhlcv(
   futures: boolean,
   limit = 250,
 ): Promise<PairHistory> {
-  const ccxtModule = await import('ccxt');
-  const ExchangeClass = (ccxtModule.default as unknown as Record<string, new (options?: object) => CcxtExchange>)[
-    exchangeId.toLowerCase()
-  ];
+  const ccxt = await loadCcxtBrowser();
+  const ExchangeClass = ccxt[exchangeId.toLowerCase()];
   if (!ExchangeClass) throw new Error(`Unsupported exchange: ${exchangeId}`);
 
   const exchange = new ExchangeClass({
