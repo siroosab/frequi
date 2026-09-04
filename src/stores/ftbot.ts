@@ -73,6 +73,7 @@ import type { AxiosResponse } from 'axios';
 import axios from 'axios';
 
 import { evaluateFeatures } from '@/utils/features';
+import { fetchExchangeOhlcv } from '@/utils/charts/exchangeOhlcv';
 
 export function createBotSubStore(botId: string, botName: string) {
   const loginInfo = useLoginInfo(botId);
@@ -395,6 +396,33 @@ export function createBotSubStore(botId: string, botName: string) {
         const error = 'pair or timeframe not specified';
         console.error(error);
         return Promise.reject(error);
+      }
+    }
+
+    async function getExchangePairCandles(
+      pair: string,
+      timeframe: string,
+      exchangeId = botState.value.exchange,
+      futures = botState.value.trading_mode === 'futures',
+    ) {
+      if (!pair || !timeframe) return;
+      candleDataStatus.value = LoadingStatus.loading;
+      try {
+        const result = await fetchExchangeOhlcv(
+          exchangeId,
+          pair,
+          timeframe,
+          futures,
+        );
+        candleData.value = {
+          ...candleData.value,
+          [`${pair}__${timeframe}`]: { pair, timeframe, data: result },
+        };
+        candleDataStatus.value = LoadingStatus.success;
+      } catch (err) {
+        console.error('Exchange OHLCV error', err);
+        candleDataStatus.value = LoadingStatus.error;
+        showAlert(err instanceof Error ? err.message : 'Failed to fetch exchange candles', 'error');
       }
     }
 
@@ -1605,6 +1633,7 @@ export function createBotSubStore(botId: string, botName: string) {
       getLocks,
       deleteLock,
       getPairCandles,
+      getExchangePairCandles,
       getPairHistory,
       getStrategyPlotConfig,
       getStrategyList,

@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { MarginMode, TradingMode } from '@/types';
 import type { ExchangeSelection, Markets, MarketsPayload, PairHistoryPayload } from '@/types';
+import { isHigherTimeframe } from '@/utils/charts/exchangeOhlcv';
 
 const botStore = useBotStore();
 const chartStore = useChartConfigStore();
 
 const finalTimeframe = computed<string>(() => {
-  return botStore.activeBot.isWebserverMode
-    ? chartStore.selectedTimeframe || botStore.activeBot.strategy?.timeframe || ''
+  const baseTimeframe = botStore.activeBot.isWebserverMode
+    ? botStore.activeBot.strategy?.timeframe || botStore.activeBot.timeframe || ''
     : botStore.activeBot.timeframe;
+  return isHigherTimeframe(chartStore.selectedTimeframe, baseTimeframe)
+    ? chartStore.selectedTimeframe
+    : baseTimeframe;
 });
 
 const availablePairs = computed<string[]>(() => {
@@ -32,6 +36,16 @@ onMounted(() => {
 
 function refreshOHLCV(pair: string, columns: string[]) {
   console.log('Refreshing OHLCV for pair:', pair, finalTimeframe.value, 'with columns:', columns);
+  if (isHigherTimeframe(finalTimeframe.value, botStore.activeBot.timeframe)) {
+    const exchangeId = exchange.value.customExchange
+      ? exchange.value.selectedExchange.exchange
+      : botStore.activeBot.botState.exchange;
+    const futures = exchange.value.customExchange
+      ? exchange.value.selectedExchange.trade_mode.trading_mode === TradingMode.FUTURES
+      : botStore.activeBot.botState.trading_mode === TradingMode.FUTURES;
+    botStore.activeBot.getExchangePairCandles(pair, finalTimeframe.value, exchangeId, futures);
+    return;
+  }
   if (botStore.activeBot.isWebserverMode && finalTimeframe.value) {
     const payload: PairHistoryPayload = {
       pair: pair,

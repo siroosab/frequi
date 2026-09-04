@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GridItemData } from '@/types';
-import type { PairHistoryPayload } from '@/types';
 import type { TabsItem } from '@nuxt/ui';
+import { isHigherTimeframe } from '@/utils/charts/exchangeOhlcv';
 
 const botStore = useBotStore();
 const layoutStore = useLayoutStore();
@@ -50,22 +50,22 @@ const responsiveGridLayouts = computed(() => {
 });
 
 const chartTimeframe = computed(() => {
-  return chartStore.selectedTimeframe || botStore.activeBot.timeframe || '';
+  const baseTimeframe = botStore.activeBot.timeframe || '';
+  return isHigherTimeframe(chartStore.selectedTimeframe, baseTimeframe)
+    ? chartStore.selectedTimeframe
+    : baseTimeframe;
 });
 
 function refreshOHLCV(pair: string, columns: string[]) {
-  const payload: PairHistoryPayload = {
+  if (isHigherTimeframe(chartTimeframe.value, botStore.activeBot.timeframe)) {
+    botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value);
+    return;
+  }
+  botStore.activeBot.getPairCandles({
     pair: pair,
     timeframe: chartTimeframe.value,
-    timerange: '',
-    strategy: botStore.activeBot.botState.strategy,
     columns: columns,
-    live_mode: true,
-    exchange: botStore.activeBot.botState.exchange,
-    trading_mode: botStore.activeBot.botState.trading_mode,
-    margin_mode: botStore.activeBot.botState.margin_mode,
-  };
-  botStore.activeBot.getPairHistory(payload);
+  });
 }
 
 const tradingTabItems = computed<TabsItem[]>(() => {
@@ -261,7 +261,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
           </div>
           <CandleChartContainer
             :available-pairs="botStore.activeBot.whitelist"
-            historic-view
+            :historic-view="!!false"
             :timeframe="chartTimeframe"
             :trades="botStore.activeBot.allTrades"
             @refresh-data="refreshOHLCV"
