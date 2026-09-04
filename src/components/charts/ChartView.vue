@@ -16,14 +16,6 @@ const availablePairs = computed<string[]>(() => {
     if (chartStore.useLiveData) {
       return Object.keys(markets.value?.markets || {}).sort() || [];
     }
-    if (finalTimeframe.value && finalTimeframe.value !== '') {
-      const tf = finalTimeframe.value;
-      return botStore.activeBot.pairlistWithTimeframe
-        .filter(([_, timeframe]) => {
-          return timeframe === tf;
-        })
-        .map(([pair]) => pair);
-    }
     return botStore.activeBot.pairlist;
   }
   return botStore.activeBot.whitelist;
@@ -48,7 +40,16 @@ function refreshOHLCV(pair: string, columns: string[]) {
       strategy: chartStore.strategy,
       // freqaimodel: freqaiModel.value,
       columns: columns,
-      live_mode: chartStore.useLiveData,
+      live_mode: true,
+      exchange: exchange.value.customExchange
+        ? exchange.value.selectedExchange.exchange
+        : botStore.activeBot.botState.exchange,
+      trading_mode: exchange.value.customExchange
+        ? exchange.value.selectedExchange.trade_mode.trading_mode
+        : botStore.activeBot.botState.trading_mode,
+      margin_mode: exchange.value.customExchange
+        ? exchange.value.selectedExchange.trade_mode.margin_mode
+        : botStore.activeBot.botState.margin_mode,
     };
     if (exchange.value.customExchange) {
       payload.exchange = exchange.value.selectedExchange.exchange;
@@ -146,7 +147,11 @@ watch(
           </div>
           <div class="flex flex-col text-start">
             <span>Timeframe</span>
-            <TimeframeSelect v-model="chartStore.selectedTimeframe" class="mt-1" />
+            <TimeframeSelect
+              v-model="chartStore.selectedTimeframe"
+              :above-timeframe="botStore.activeBot.strategy?.timeframe || botStore.activeBot.timeframe"
+              class="mt-1"
+            />
           </div>
           <TimeRangeSelect
             v-model="chartStore.timerange"

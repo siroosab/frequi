@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { GridItemData } from '@/types';
+import type { PairHistoryPayload } from '@/types';
 import type { TabsItem } from '@nuxt/ui';
 
 const botStore = useBotStore();
 const layoutStore = useLayoutStore();
 const settingsStore = useSettingsStore();
+const chartStore = useChartConfigStore();
 const currentBreakpoint = ref('');
 
 const breakpointChanged = (newBreakpoint: string) => {
@@ -14,9 +16,6 @@ const breakpointChanged = (newBreakpoint: string) => {
 const isResizableLayout = computed(() =>
   ['', 'sm', 'md', 'lg', 'xl'].includes(currentBreakpoint.value),
 );
-const isLayoutLocked = computed(() => {
-  return layoutStore.layoutLocked || !isResizableLayout.value;
-});
 const gridLayoutData = computed((): GridItemData[] => {
   if (isResizableLayout.value) {
     return layoutStore.tradingLayout;
@@ -50,12 +49,23 @@ const responsiveGridLayouts = computed(() => {
   };
 });
 
+const chartTimeframe = computed(() => {
+  return chartStore.selectedTimeframe || botStore.activeBot.timeframe || '';
+});
+
 function refreshOHLCV(pair: string, columns: string[]) {
-  botStore.activeBot.getPairCandles({
+  const payload: PairHistoryPayload = {
     pair: pair,
-    timeframe: botStore.activeBot.timeframe,
+    timeframe: chartTimeframe.value,
+    timerange: '',
+    strategy: botStore.activeBot.botState.strategy,
     columns: columns,
-  });
+    live_mode: true,
+    exchange: botStore.activeBot.botState.exchange,
+    trading_mode: botStore.activeBot.botState.trading_mode,
+    margin_mode: botStore.activeBot.botState.margin_mode,
+  };
+  botStore.activeBot.getPairHistory(payload);
 }
 
 const tradingTabItems = computed<TabsItem[]>(() => {
@@ -241,10 +251,18 @@ const tradingTabItems = computed<TabsItem[]>(() => {
         drag-allow-from=".drag-header"
       >
         <DraggableContainer header="Chart">
+          <div class="flex items-center gap-2 px-2 pt-2 pb-1">
+            <span class="text-sm font-medium">Chart Timeframe</span>
+            <TimeframeSelect
+              v-model="chartStore.selectedTimeframe"
+              :above-timeframe="botStore.activeBot.timeframe"
+              class="min-w-32"
+            />
+          </div>
           <CandleChartContainer
             :available-pairs="botStore.activeBot.whitelist"
-            :historic-view="!!false"
-            :timeframe="displayTimeframe"
+            historic-view
+            :timeframe="chartTimeframe"
             :trades="botStore.activeBot.allTrades"
             @refresh-data="refreshOHLCV"
           >
