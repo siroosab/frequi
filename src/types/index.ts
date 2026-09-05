@@ -14,6 +14,7 @@ export * from './features';
 export * from './gridLayout';
 export * from './locks';
 export * from './pairlists';
+export * from './pairControls';
 export * from './plot';
 export * from './profit';
 export * from './strategy';

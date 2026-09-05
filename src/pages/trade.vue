@@ -56,6 +56,14 @@ const chartTimeframe = computed(() => {
     : baseTimeframe;
 });
 
+const chartPair = computed(() => {
+  return botStore.activeBot.plotMultiPairs[0] || botStore.activeBot.whitelist[0] || '';
+});
+
+function handleChartPriceClick(price: number) {
+  window.dispatchEvent(new CustomEvent('chart-price-selected', { detail: price }));
+}
+
 function refreshOHLCV(pair: string, columns: string[]) {
   if (isHigherTimeframe(chartTimeframe.value, botStore.activeBot.timeframe)) {
     botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value);
@@ -251,6 +259,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
         drag-allow-from=".drag-header"
       >
         <DraggableContainer header="Chart">
+          <PairControlPanels :pair="chartPair" />
           <div class="flex items-center gap-2 px-2 pt-2 pb-1">
             <span class="text-sm font-medium">Chart Timeframe</span>
             <TimeframeSelect
@@ -265,6 +274,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
             :timeframe="chartTimeframe"
             :trades="botStore.activeBot.allTrades"
             @refresh-data="refreshOHLCV"
+            @chart-price-click="handleChartPriceClick"
           >
           </CandleChartContainer>
         </DraggableContainer>

@@ -67,6 +67,8 @@ const props = defineProps<{
   startCandleCount: number;
 }>();
 
+const emit = defineEmits<{ chartPriceClick: [price: number] }>();
+
 const isLabelLeft = computed(() => props.labelSide === 'left');
 // Chart default options
 const MARGINLEFT = isLabelLeft.value ? '5.5%' : '1%';
@@ -707,6 +709,11 @@ function updateSliderPosition() {
   }
 }
 
+function handleChartClick(params: { value?: unknown }) {
+  const value = Array.isArray(params.value) ? params.value[1] : params.value;
+  if (typeof value === 'number' && Number.isFinite(value)) emit('chartPriceClick', value);
+}
+
 // const buyData = ref<number[][]>([]);
 // const sellData = ref<number[][]>([]);
 // createSignalData(colDate: number, colOpen: number, colBuy: number, colSell: number): void {
@@ -743,7 +750,14 @@ watch(
 
 <template>
   <div class="h-full w-full">
-    <ECharts v-if="hasData" ref="candleChart" :theme="theme" autoresize manual-update />
+    <ECharts
+      v-if="hasData"
+      ref="candleChart"
+      :theme="theme"
+      autoresize
+      manual-update
+      @click="handleChartClick"
+    />
   </div>
 </template>
 

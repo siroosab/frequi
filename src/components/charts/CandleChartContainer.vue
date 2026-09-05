@@ -23,6 +23,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
+  chartPriceClick: [price: number];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -213,6 +214,7 @@ const singlePairSelection = computed({
           :slider-position="props.sliderPosition"
           :is-single-pair-view="isSinglePairView"
           @refresh-data="refresh()"
+          @chart-price-click="emit('chartPriceClick', $event)"
         >
         </SingleCandleChartContainer>
       </div>

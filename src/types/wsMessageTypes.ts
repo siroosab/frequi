@@ -8,6 +8,7 @@ export enum FtWsMessageTypes {
   exitFill = 'exit_fill',
   exitCancel = 'exit_cancel',
   newCandle = 'new_candle',
+  pairControl = 'pair_control',
 }
 
 export interface FtBaseWsMessage {
@@ -54,6 +55,11 @@ export interface FtNewCandleMessage extends FtBaseWsMessage {
   // ...
 }
 
+export interface FtPairControlMessage extends FtBaseWsMessage {
+  type: FtWsMessageTypes.pairControl;
+  data: { version: number; pair: string; settings: Record<string, Record<string, unknown>> };
+}
+
 export interface FtErrorMessage extends FtBaseWsMessage {
   type: FtWsMessageTypes.exception;
   data: string;
@@ -66,4 +72,5 @@ export type FTWsMessage =
   | FTEntryCancelMessage
   | FtExitFillMessage
   | FTExitCancelMessage
-  | FtNewCandleMessage;
+  | FtNewCandleMessage
+  | FtPairControlMessage;

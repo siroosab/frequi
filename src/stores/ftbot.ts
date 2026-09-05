@@ -40,6 +40,8 @@ import type {
   MarketsPayload,
   MixTagStats,
   PairCandlePayload,
+  PairControlResponse,
+  PairControlUpdate,
   PairHistory,
   PairHistoryLocal,
   PairHistoryPayload,
@@ -588,6 +590,19 @@ export function createBotSubStore(botId: string, botName: string) {
         console.error(error);
         return Promise.reject(error);
       }
+    }
+
+    async function getPairControl(pair: string) {
+      const { data } = await api.get<PairControlResponse>(`/pair-controls/${encodeURIComponent(pair)}`);
+      return data;
+    }
+
+    async function updatePairControl(pair: string, payload: PairControlUpdate) {
+      const { data } = await api.put<PairControlUpdate, AxiosResponse<PairControlResponse>>(
+        `/pair-controls/${encodeURIComponent(pair)}`,
+        payload,
+      );
+      return data;
     }
 
     async function getMarkets(payload: MarketsPayload) {
@@ -1473,6 +1488,11 @@ export function createBotSubStore(botId: string, botName: string) {
           }
           break;
         }
+        case FtWsMessageTypes.pairControl:
+          if (msg.data.pair === plotMultiPairs.value[0]) {
+            window.dispatchEvent(new CustomEvent('pair-control-updated', { detail: msg.data }));
+          }
+          break;
         default:
           // Unhandled events ...
           console.log(`Received event ${(msg as { type: unknown }).type}`);
@@ -1516,6 +1536,7 @@ export function createBotSubStore(botId: string, botName: string) {
                 FtWsMessageTypes.exitFill,
                 FtWsMessageTypes.entryCancel,
                 FtWsMessageTypes.exitCancel,
+                FtWsMessageTypes.pairControl,
                 /*'new_candle' /*'analyzed_df'*/
               ];
               if (botFeatures.value.websocketNewCandle) {
@@ -1643,6 +1664,8 @@ export function createBotSubStore(botId: string, botName: string) {
       getHyperoptLossList,
       getExchangeList,
       getAvailablePairs,
+      getPairControl,
+      updatePairControl,
       getMarkets,
       getPerformance,
       getEntryStats,

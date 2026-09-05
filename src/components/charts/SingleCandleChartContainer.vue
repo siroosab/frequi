@@ -23,6 +23,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
+  chartPriceClick: [price: number];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -173,6 +174,7 @@ watch(
           :color-down="colorStore.colorDown"
           :start-candle-count="settingsStore.chartDefaultCandleCount"
           :label-side="settingsStore.chartLabelSide"
+          @chart-price-click="emit('chartPriceClick', $event)"
         />
         <div v-else class="m-auto">
           <UProgress v-if="isLoadingDataset" class="m-5 w-5 h-5" label="Spinning" />

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 
 import createVuePlugin from '@vitejs/plugin-vue';
 import ui from '@nuxt/ui/vite';
@@ -16,7 +17,11 @@ try {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const botApiTarget = env.FREQTRADE_API_TARGET || 'http://127.0.0.1:8080';
+
+  return {
   define: {
     __COMMIT_HASH__: JSON.stringify(commitHash),
   },
@@ -92,8 +97,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8080',
+        target: botApiTarget,
         changeOrigin: true,
+        ws: true,
       },
     },
     host: '127.0.0.1',
@@ -109,4 +115,5 @@ export default defineConfig({
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
     ],
   },
+  };
 });
