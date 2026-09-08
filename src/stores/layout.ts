@@ -21,7 +21,7 @@ export enum DashboardLayout {
 
 // Define default layouts
 const DEFAULT_TRADING_LAYOUT: GridItemData[] = [
-  { i: TradeLayout.multiPane, x: 0, y: 0, w: 3, h: 35 },
+  { i: TradeLayout.multiPane, x: 0, y: 0, w: 3, h: 14 },
   { i: TradeLayout.chartView, x: 3, y: 0, w: 9, h: 14 },
   { i: TradeLayout.tradeDetail, x: 3, y: 19, w: 9, h: 6 },
   { i: TradeLayout.openTrades, x: 3, y: 14, w: 9, h: 5 },

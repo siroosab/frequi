@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChartSliderPosition, PairHistory, Trade } from '@/types';
+import type { ChartSliderPosition, PairControlSettings, PairHistory, Trade } from '@/types';
 import { LoadingStatus } from '@/types';
 
 const props = withDefaults(
@@ -11,6 +11,7 @@ const props = withDefaults(
     pair?: string;
     sliderPosition?: ChartSliderPosition;
     isSinglePairView?: boolean;
+    pairControls?: PairControlSettings;
   }>(),
   {
     trades: () => [],
@@ -175,6 +176,7 @@ watch(
           :start-candle-count="settingsStore.chartDefaultCandleCount"
           :label-side="settingsStore.chartLabelSide"
           @chart-price-click="emit('chartPriceClick', $event)"
+          :pair-controls="props.pairControls"
         />
         <div v-else class="m-auto">
           <UProgress v-if="isLoadingDataset" class="m-5 w-5 h-5" label="Spinning" />

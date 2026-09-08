@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ChartSliderPosition, PairHistory, Trade } from '@/types';
+import type { ChartSliderPosition, PairControlSettings, PairHistory, Trade } from '@/types';
 
 const props = withDefaults(
   defineProps<{
@@ -11,6 +11,7 @@ const props = withDefaults(
     reloadDataOnSwitch?: boolean;
     strategy?: string;
     sliderPosition?: ChartSliderPosition;
+    pairControls?: PairControlSettings;
   }>(),
   {
     trades: () => [],
@@ -215,6 +216,7 @@ const singlePairSelection = computed({
           :is-single-pair-view="isSinglePairView"
           @refresh-data="refresh()"
           @chart-price-click="emit('chartPriceClick', $event)"
+          :pair-controls="props.pairControls"
         >
         </SingleCandleChartContainer>
       </div>

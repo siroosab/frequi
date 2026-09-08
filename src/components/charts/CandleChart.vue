@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import type { ChartSliderPosition, IndicatorConfig, PairHistory, PlotConfig, Trade } from '@/types';
+import type {
+  ChartSliderPosition,
+  IndicatorConfig,
+  PairControlSettings,
+  PairHistory,
+  PlotConfig,
+  Trade,
+} from '@/types';
 import { ChartType } from '@/types';
 
 import ECharts from 'vue-echarts';
@@ -65,9 +72,12 @@ const props = defineProps<{
   colorDown: string;
   labelSide: 'left' | 'right';
   startCandleCount: number;
+  pairControls?: PairControlSettings;
 }>();
 
-const emit = defineEmits<{ chartPriceClick: [price: number] }>();
+const emit = defineEmits<{
+  chartPriceClick: [price: number];
+}>();
 
 const isLabelLeft = computed(() => props.labelSide === 'left');
 // Chart default options
@@ -581,6 +591,55 @@ function updateChart(initial = false) {
   );
   if (Array.isArray(options.series)) {
     options.series.push(tradesSeries);
+  }
+
+  const controls = props.pairControls;
+  const primarySeries = options.series?.[0] as Record<string, unknown> | undefined;
+  if (controls && primarySeries) {
+    const preTrade = controls.pre_trade;
+    const risk = controls.risk;
+    const markLines: Array<Record<string, unknown>> = [];
+    const markAreas: unknown[] = [];
+    const addLine = (value: number | null, name: string, color: string) => {
+      if (value !== null) {
+        markLines.push({ yAxis: value, name, lineStyle: { color, type: 'dashed' } });
+      }
+    };
+
+    addLine(preTrade.long_price_min, 'Long min', '#26a69a');
+    addLine(preTrade.long_price_max, 'Long max', '#26a69a');
+    addLine(preTrade.short_price_min, 'Short min', '#ef5350');
+    addLine(preTrade.short_price_max, 'Short max', '#ef5350');
+    if (risk.stoploss_enabled && risk.stoploss_mode === 'price') {
+      addLine(risk.stoploss_price, 'Stop loss', '#ff5252');
+    }
+    const openTrade = filteredTrades.value.find((trade) => trade.is_open);
+    if (openTrade && risk.stoploss_enabled && risk.stoploss_mode === 'percent' && risk.stoploss_percent !== null) {
+      const stopPrice = openTrade.is_short
+        ? openTrade.open_rate * (1 + Math.abs(risk.stoploss_percent) / 100)
+        : openTrade.open_rate * (1 - Math.abs(risk.stoploss_percent) / 100);
+      addLine(stopPrice, 'Stop loss %', '#ff5252');
+    }
+    if (openTrade && risk.take_profit_enabled && risk.take_profit_percent !== null) {
+      const takeProfitPrice = openTrade.is_short
+        ? openTrade.open_rate * (1 - risk.take_profit_percent / 100)
+        : openTrade.open_rate * (1 + risk.take_profit_percent / 100);
+      addLine(takeProfitPrice, 'Take profit %', '#42a5f5');
+    }
+    if (preTrade.long_price_min !== null && preTrade.long_price_max !== null) {
+      markAreas.push([
+        { yAxis: preTrade.long_price_min, name: 'Long zone', itemStyle: { color: '#26a69a18' } },
+        { yAxis: preTrade.long_price_max },
+      ]);
+    }
+    if (preTrade.short_price_min !== null && preTrade.short_price_max !== null) {
+      markAreas.push([
+        { yAxis: preTrade.short_price_min, name: 'Short zone', itemStyle: { color: '#ef535018' } },
+        { yAxis: preTrade.short_price_max },
+      ]);
+    }
+    primarySeries.markLine = { symbol: 'none', label: { show: true }, data: markLines };
+    primarySeries.markArea = { silent: true, data: markAreas };
   }
 
   // Merge this into original data
