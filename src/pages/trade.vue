@@ -270,6 +270,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
       <GridItem
         v-if="gridLayoutChartView.h !== 0"
         v-bind="gridItemProps"
+        class="chart-grid-item"
         :i="gridLayoutChartView.i"
         :x="gridLayoutChartView.x"
         :y="gridLayoutChartView.y"
@@ -355,7 +356,13 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   width: 280px !important;
 }
 
+.chart-grid-item {
+  margin-left: calc(280px - 25%);
+  width: calc(100% - 280px) !important;
+}
+
 .multi-pane-grid-item :deep(.drag-header),
+.chart-grid-item :deep(.drag-header),
 .trade-details-panels :deep(.drag-header) {
   background-color: rgb(224 242 241);
   border-color: rgb(153 246 228);
@@ -363,11 +370,13 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 }
 
 .multi-pane-grid-item :deep(.border),
+.chart-grid-item :deep(.border),
 .trade-details-panels :deep(.border) {
   border-color: rgb(153 246 228);
 }
 
 .multi-pane-grid-item :deep(.p-0),
+.chart-grid-item :deep(.p-0),
 .trade-details-panels :deep(.p-0) {
   background-color: rgb(248 250 252);
 }
@@ -379,6 +388,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 
 .dark {
   .multi-pane-grid-item :deep(.drag-header),
+  .chart-grid-item :deep(.drag-header),
   .trade-details-panels :deep(.drag-header) {
     background-color: rgb(19 78 74 / 0.55);
     border-color: rgb(45 212 191 / 0.45);
@@ -386,11 +396,13 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   }
 
   .multi-pane-grid-item :deep(.border),
+  .chart-grid-item :deep(.border),
   .trade-details-panels :deep(.border) {
     border-color: rgb(45 212 191 / 0.45);
   }
 
   .multi-pane-grid-item :deep(.p-0),
+  .chart-grid-item :deep(.p-0),
   .trade-details-panels :deep(.p-0) {
     background-color: rgb(15 23 42 / 0.72);
   }
