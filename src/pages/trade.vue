@@ -163,6 +163,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
       <GridItem
         v-if="gridLayoutMultiPane.h !== 0"
         v-bind="gridItemProps"
+        class="multi-pane-grid-item"
         :i="gridLayoutMultiPane.i"
         :x="gridLayoutMultiPane.x"
         :y="gridLayoutMultiPane.y"
@@ -283,6 +284,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
             <TimeframeSelect
               v-model="chartStore.selectedTimeframe"
               :above-timeframe="botStore.activeBot.timeframe"
+              include-above-timeframe
               class="min-w-32"
             />
           </div>
@@ -306,7 +308,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
         color="neutral"
         variant="ghost"
         size="sm"
-        class="w-full justify-between px-0 text-start"
+        class="w-full justify-center bg-neutral-200 px-0 text-center hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
         :icon="pairControlsOpen ? 'mdi:chevron-down' : 'mdi:chevron-up'"
         :aria-label="pairControlsOpen ? 'Collapse pair controls' : 'Expand pair controls'"
         @click.stop="pairControlsOpen = !pairControlsOpen"
@@ -347,3 +349,9 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   </section>
   </div>
 </template>
+
+<style scoped>
+.multi-pane-grid-item {
+  width: 280px !important;
+}
+</style>

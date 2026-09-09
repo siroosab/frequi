@@ -4,6 +4,7 @@ interface Props {
   modelValue?: string;
   belowTimeframe?: string;
   aboveTimeframe?: string;
+  includeAboveTimeframe?: boolean;
   size?: undefined | 'sm' | 'md' | 'lg' | 'xl';
 }
 
@@ -12,6 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
   modelValue: undefined,
   belowTimeframe: '',
   aboveTimeframe: '',
+  includeAboveTimeframe: false,
   size: undefined,
 });
 const emit = defineEmits<{
@@ -57,7 +59,7 @@ const availableTimeframes = computed(() => {
   }
   if (props.aboveTimeframe) {
     const idx = timeframes.findIndex((v) => v.value === props.aboveTimeframe);
-    if (idx >= 0) timeframes = timeframes.slice(idx + 1);
+    if (idx >= 0) timeframes = timeframes.slice(idx + (props.includeAboveTimeframe ? 0 : 1));
   }
   return timeframes;
 });
