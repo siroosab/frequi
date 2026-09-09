@@ -302,7 +302,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
       </GridItem>
     </template>
   </GridLayout>
-  <section class="relative z-50 shrink-0 border-t border-default bg-elevated/95 pointer-events-auto">
+  <section class="trade-pair-controls relative z-50 shrink-0 border-t border-default bg-elevated/95 pointer-events-auto">
     <div class="flex items-center justify-between px-3 py-1">
       <UButton
         color="neutral"
@@ -334,7 +334,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
       {{ lowerPanelsOpen ? 'Hide trade details' : 'Show trade details' }}
     </UButton>
   </div>
-  <section v-if="lowerPanelsOpen" class="relative z-40 max-h-[28vh] w-full shrink-0 overflow-y-auto border-t border-default bg-elevated/95 p-2 pointer-events-auto">
+  <section v-if="lowerPanelsOpen" class="trade-details-panels relative z-40 max-h-[28vh] w-full shrink-0 overflow-y-auto border-t border-default bg-elevated/95 p-2 pointer-events-auto">
     <div class="grid w-full min-w-0 grid-cols-1 gap-2 md:grid-cols-2">
       <DraggableContainer class="min-w-0 w-full" header="Open Trades">
         <TradeList class="open-trades" :trades="botStore.activeBot.openTrades" title="Open trades" :active-trades="true" empty-text="Currently no open trades." />
@@ -353,5 +353,51 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 <style scoped>
 .multi-pane-grid-item {
   width: 280px !important;
+}
+
+.multi-pane-grid-item :deep(.drag-header),
+.trade-details-panels :deep(.drag-header) {
+  background-color: rgb(224 242 241);
+  border-color: rgb(153 246 228);
+  color: rgb(19 78 74);
+}
+
+.multi-pane-grid-item :deep(.border),
+.trade-details-panels :deep(.border) {
+  border-color: rgb(153 246 228);
+}
+
+.multi-pane-grid-item :deep(.p-0),
+.trade-details-panels :deep(.p-0) {
+  background-color: rgb(248 250 252);
+}
+
+.trade-pair-controls {
+  border-color: rgb(125 211 252);
+  background-color: rgb(240 249 255);
+}
+
+.dark {
+  .multi-pane-grid-item :deep(.drag-header),
+  .trade-details-panels :deep(.drag-header) {
+    background-color: rgb(19 78 74 / 0.55);
+    border-color: rgb(45 212 191 / 0.45);
+    color: rgb(204 251 241);
+  }
+
+  .multi-pane-grid-item :deep(.border),
+  .trade-details-panels :deep(.border) {
+    border-color: rgb(45 212 191 / 0.45);
+  }
+
+  .multi-pane-grid-item :deep(.p-0),
+  .trade-details-panels :deep(.p-0) {
+    background-color: rgb(15 23 42 / 0.72);
+  }
+
+  .trade-pair-controls {
+    border-color: rgb(56 189 248 / 0.45);
+    background-color: rgb(8 47 73 / 0.72);
+  }
 }
 </style>
