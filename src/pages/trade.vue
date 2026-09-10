@@ -8,7 +8,6 @@ const layoutStore = useLayoutStore();
 const settingsStore = useSettingsStore();
 const chartStore = useChartConfigStore();
 const currentBreakpoint = ref('');
-const pairControlsOpen = ref(false);
 const lowerPanelsOpen = ref(false);
 const chartPairControls = ref<PairControlSettings>();
 
@@ -143,8 +142,9 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 </script>
 
 <template>
-  <div class="flex h-full w-full min-h-0 flex-col overflow-hidden">
-  <GridLayout
+  <div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden">
+  <div class="relative min-h-0 flex-1">
+    <GridLayout
     class="relative z-0 min-h-0 w-full flex-1 overflow-hidden"
     style="padding: 1px"
     :row-height="50"
@@ -302,28 +302,17 @@ const tradingTabItems = computed<TabsItem[]>(() => {
         </DraggableContainer>
       </GridItem>
     </template>
-  </GridLayout>
-  <section class="trade-pair-controls relative z-50 shrink-0 border-t border-default bg-elevated/95 pointer-events-auto">
-    <div class="flex items-center justify-between px-3 py-1">
-      <UButton
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        class="w-full justify-center bg-neutral-200 px-0 text-center hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-        :icon="pairControlsOpen ? 'mdi:chevron-down' : 'mdi:chevron-up'"
-        :aria-label="pairControlsOpen ? 'Collapse pair controls' : 'Expand pair controls'"
-        @click.stop="pairControlsOpen = !pairControlsOpen"
-      >
-        <span class="flex items-center gap-2">
-          <span class="text-xs font-semibold">Pair controls</span>
-          <span class="truncate text-xs text-muted">{{ chartPair || 'Select a pair' }}</span>
-        </span>
-      </UButton>
+    </GridLayout>
+    <section class="trade-pair-controls pointer-events-auto">
+    <div class="flex items-center justify-center border-b border-default px-2 py-2">
+      <div class="text-center">
+        <div class="text-xs font-semibold">Pair controls</div>
+        <div class="truncate text-xs text-muted">{{ chartPair || 'Select a pair' }}</div>
+      </div>
     </div>
-    <div v-show="pairControlsOpen" class="max-h-[22vh] overflow-y-auto border-t border-default">
-      <PairControlPanels :pair="chartPair" />
-    </div>
-  </section>
+    <PairControlPanels class="pair-controls-content" :pair="chartPair" />
+    </section>
+  </div>
   <div class="relative z-50 shrink-0 border-t border-default bg-elevated pointer-events-auto px-3 py-1">
     <UButton
       color="neutral"
@@ -357,8 +346,8 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 }
 
 .chart-grid-item {
-  margin-left: calc(280px - 25%);
-  width: calc(100% - 280px) !important;
+  margin-left: calc(560px - 25%);
+  width: calc(100% - 560px) !important;
 }
 
 .multi-pane-grid-item :deep(.drag-header),
@@ -382,8 +371,19 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 }
 
 .trade-pair-controls {
-  border-color: rgb(125 211 252);
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 281px;
+  z-index: 40;
+  width: 280px;
+  overflow-y: auto;
+  border: 1px solid rgb(125 211 252);
   background-color: rgb(240 249 255);
+}
+
+.trade-pair-controls :deep(.pair-controls-content) {
+  grid-template-columns: minmax(0, 1fr) !important;
 }
 
 .dark {
@@ -410,6 +410,12 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   .trade-pair-controls {
     border-color: rgb(56 189 248 / 0.45);
     background-color: rgb(8 47 73 / 0.72);
+  }
+}
+
+@media (max-width: 767px) {
+  .trade-pair-controls {
+    display: none;
   }
 }
 </style>

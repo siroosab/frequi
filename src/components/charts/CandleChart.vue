@@ -722,7 +722,11 @@ function initializeChartOptions() {
       },
       {
         xAxisIndex: [0, 1],
-        bottom: 10,
+        orient: 'vertical',
+        right: 8,
+        top: 36,
+        bottom: 50,
+        width: 18,
         start: 80,
         end: 100,
         ...dataZoomPartial,
