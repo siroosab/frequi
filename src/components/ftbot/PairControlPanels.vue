@@ -119,12 +119,13 @@ onUnmounted(() => {
           </UFormField>
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <UFormField label="Entry price from chart">
-            <div class="flex gap-1">
-              <UButton size="sm" variant="outline" @click="requestPrice('long')">Long</UButton>
-              <UButton size="sm" variant="outline" @click="requestPrice('short')">Short</UButton>
+          <div class="grid gap-1">
+            <span class="text-sm font-medium">Entry price from chart</span>
+            <div id="entry-price-from-chart" class="flex gap-1" role="group" aria-label="Entry price from chart">
+              <UButton size="sm" variant="outline" aria-label="Use long price" @click="requestPrice('long')">Long</UButton>
+              <UButton size="sm" variant="outline" aria-label="Use short price" @click="requestPrice('short')">Short</UButton>
             </div>
-          </UFormField>
+          </div>
           <UFormField label="Leverage (1x-5x)">
             <UInputNumber v-model="settings.pre_trade.leverage" :min="1" :max="5" :step="1" />
           </UFormField>
@@ -139,6 +140,7 @@ onUnmounted(() => {
         </div>
         <UFormField label="Entry signal">
           <USegmentedControl
+            id="entry-signal"
             v-model="settings.pre_trade.entry_signal"
             :items="[
               { label: 'RSI', value: 'rsi' },
@@ -151,7 +153,14 @@ onUnmounted(() => {
           />
         </UFormField>
         <UFormField label="Entry strictness">
-          <USlider v-model="settings.pre_trade.entry_strictness" :min="0" :max="100" :step="1" />
+          <USlider
+            id="entry-strictness"
+            v-model="settings.pre_trade.entry_strictness"
+            :min="0"
+            :max="100"
+            :step="1"
+            aria-label="Entry strictness"
+          />
           <div class="flex justify-between text-xs text-muted"><span>Easy</span><span>{{ settings.pre_trade.entry_strictness }}%</span><span>Strict</span></div>
         </UFormField>
         <UFormField label="Entry tag">
