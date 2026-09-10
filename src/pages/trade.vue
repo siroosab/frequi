@@ -198,7 +198,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 <style scoped>
 .trade-workspace {
   display: grid;
-  grid-template-columns: minmax(220px, 254.111px) minmax(220px, 254.111px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 254.111px) minmax(220px, 292.228px) minmax(0, 1fr);
   gap: 4px;
   min-height: 0;
   overflow: hidden;
@@ -257,6 +257,31 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   min-width: 0;
 }
 
+.pair-controls-panel :deep(.pair-controls-content) {
+  gap: 0.375rem;
+}
+
+.pair-controls-panel :deep(.pair-control-card) {
+  font-size: 0.8125rem;
+}
+
+.pair-controls-panel :deep(.pair-control-card input),
+.pair-controls-panel :deep(.pair-control-card button),
+.pair-controls-panel :deep(.pair-control-card [role='button']) {
+  min-height: 1.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.pair-controls-panel :deep(.pair-control-card .gap-3) {
+  gap: 0.5rem;
+}
+
+.pair-controls-panel :deep(.pair-control-card .gap-2) {
+  gap: 0.375rem;
+}
+
 .pair-controls-panel :deep(.pair-control-card) {
   border-color: rgb(153 246 228);
   background-color: rgb(248 250 252);
@@ -305,7 +330,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 
 @media (max-width: 1100px) {
   .trade-workspace {
-    grid-template-columns: minmax(210px, 254.111px) minmax(0, 1fr);
+    grid-template-columns: minmax(210px, 292.228px) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   }
 

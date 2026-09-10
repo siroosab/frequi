@@ -78,7 +78,7 @@ onUnmounted(() => {
 
 <template>
   <div v-if="pair" class="pair-controls-content grid gap-2 xl:grid-cols-2 p-1">
-    <UCard class="pair-control-card" :ui="{ body: 'p-2 sm:p-2' }">
+    <UCard class="pair-control-card" :ui="{ body: 'p-1 sm:p-1' }">
       <template #header>
         <div class="pair-control-card-header flex items-center justify-between gap-2">
           <div>
@@ -169,7 +169,7 @@ onUnmounted(() => {
       </div>
     </UCard>
 
-    <UCard class="pair-control-card" :ui="{ body: 'p-2 sm:p-2' }">
+    <UCard class="pair-control-card" :ui="{ body: 'p-1 sm:p-1' }">
       <template #header>
         <div class="pair-control-card-header flex items-center justify-between gap-2">
           <div>
