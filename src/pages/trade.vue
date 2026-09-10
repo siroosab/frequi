@@ -145,7 +145,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   <div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden">
   <div class="relative min-h-0 flex-1">
     <GridLayout
-    class="relative z-0 min-h-0 w-full flex-1 overflow-hidden"
+    class="trade-grid-layout relative z-0 min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden"
     style="padding: 1px"
     :row-height="50"
     :layout="gridLayoutData"
@@ -310,7 +310,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
         <div class="truncate text-xs text-muted">{{ chartPair || 'Select a pair' }}</div>
       </div>
     </div>
-    <PairControlPanels class="pair-controls-content" :pair="chartPair" />
+    <PairControlPanels :pair="chartPair" />
     </section>
   </div>
   <div class="relative z-50 shrink-0 border-t border-default bg-elevated pointer-events-auto px-3 py-1">
