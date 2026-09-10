@@ -1,58 +1,13 @@
 <script setup lang="ts">
-import type { GridItemData, PairControlSettings } from '@/types';
+import type { PairControlSettings } from '@/types';
 import type { TabsItem } from '@nuxt/ui';
 import { isHigherTimeframe } from '@/utils/charts/exchangeOhlcv';
 
 const botStore = useBotStore();
-const layoutStore = useLayoutStore();
 const settingsStore = useSettingsStore();
 const chartStore = useChartConfigStore();
-const currentBreakpoint = ref('');
 const lowerPanelsOpen = ref(false);
 const chartPairControls = ref<PairControlSettings>();
-
-const breakpointChanged = (newBreakpoint: string) => {
-  // console.log('breakpoint:', newBreakpoint);
-  currentBreakpoint.value = newBreakpoint;
-};
-const isResizableLayout = computed(() =>
-  ['', 'sm', 'md', 'lg', 'xl'].includes(currentBreakpoint.value),
-);
-const isLayoutLocked = computed(() => {
-  return layoutStore.layoutLocked || !isResizableLayout.value;
-});
-const gridLayoutData = computed((): GridItemData[] => {
-  if (isResizableLayout.value) {
-    return layoutStore.tradingLayout;
-  }
-  return [...layoutStore.getTradingLayoutSm];
-});
-
-const gridLayoutMultiPane = computed(() => {
-  return findGridLayout(gridLayoutData.value, TradeLayout.multiPane);
-});
-
-const gridLayoutOpenTrades = computed(() => {
-  return findGridLayout(gridLayoutData.value, TradeLayout.openTrades);
-});
-
-const gridLayoutTradeHistory = computed(() => {
-  return findGridLayout(gridLayoutData.value, TradeLayout.tradeHistory);
-});
-
-const gridLayoutTradeDetail = computed(() => {
-  return findGridLayout(gridLayoutData.value, TradeLayout.tradeDetail);
-});
-
-const gridLayoutChartView = computed(() => {
-  return findGridLayout(gridLayoutData.value, TradeLayout.chartView);
-});
-
-const responsiveGridLayouts = computed(() => {
-  return {
-    sm: layoutStore.getTradingLayoutSm,
-  };
-});
 
 const chartTimeframe = computed(() => {
   const baseTimeframe = botStore.activeBot.timeframe || '';
@@ -143,35 +98,9 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 
 <template>
   <div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden">
-  <div class="trade-grid-area relative min-h-0 flex-1 overflow-hidden">
-    <GridLayout
-    class="trade-grid-layout relative z-0 h-full min-h-0 w-full overflow-hidden"
-    style="padding: 1px"
-    :row-height="50"
-    :layout="gridLayoutData"
-    :vertical-compact="false"
-    :margin="[1, 1]"
-    :responsive-layouts="responsiveGridLayouts"
-    :is-resizable="!isLayoutLocked"
-    :is-draggable="!isLayoutLocked"
-    :responsive="true"
-    :cols="{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }"
-    :col-num="12"
-    @update:breakpoint="breakpointChanged"
-  >
-    <template #default="{ gridItemProps }">
-      <GridItem
-        v-if="gridLayoutMultiPane.h !== 0"
-        v-bind="gridItemProps"
-        class="multi-pane-grid-item"
-        :i="gridLayoutMultiPane.i"
-        :x="gridLayoutMultiPane.x"
-        :y="gridLayoutMultiPane.y"
-        :w="gridLayoutMultiPane.w"
-        :h="gridLayoutMultiPane.h"
-        drag-allow-from=".drag-header"
-      >
-        <DraggableContainer header="Multi Pane">
+  <div class="trade-workspace min-h-0 flex-1">
+    <section class="trade-panel multi-pane-panel">
+      <DraggableContainer header="Multi Pane">
           <div class="mt-1 flex justify-center">
             <BotControls class="mt-1 mb-2" />
           </div>
@@ -202,84 +131,21 @@ const tradingTabItems = computed<TabsItem[]>(() => {
               <PairLockList />
             </template>
           </UTabs>
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-if="false"
-        v-bind="gridItemProps"
-        :i="gridLayoutOpenTrades.i"
-        :x="gridLayoutOpenTrades.x"
-        :y="gridLayoutOpenTrades.y"
-        :w="gridLayoutOpenTrades.w"
-        :h="gridLayoutOpenTrades.h"
-        drag-allow-from=".drag-header"
-      >
-        <DraggableContainer header="Open Trades">
-          <TradeList
-            class="open-trades"
-            :trades="botStore.activeBot.openTrades"
-            title="Open trades"
-            :active-trades="true"
-            empty-text="Currently no open trades."
-          />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-if="false"
-        v-bind="gridItemProps"
-        :i="gridLayoutTradeHistory.i"
-        :x="gridLayoutTradeHistory.x"
-        :y="gridLayoutTradeHistory.y"
-        :w="gridLayoutTradeHistory.w"
-        :h="gridLayoutTradeHistory.h"
-        drag-allow-from=".drag-header"
-      >
-        <DraggableContainer header="Closed Trades">
-          <TradeList
-            class="trade-history"
-            :trades="botStore.activeBot.closedTrades"
-            title="Trade history"
-            :show-filter="true"
-            empty-text="No closed trades so far."
-          />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-if="
-          false &&
-          botStore.activeBot.detailTradeId &&
-          botStore.activeBot.tradeDetail &&
-          gridLayoutTradeDetail.h !== 0
-        "
-        v-bind="gridItemProps"
-        :i="gridLayoutTradeDetail.i"
-        :x="gridLayoutTradeDetail.x"
-        :y="gridLayoutTradeDetail.y"
-        :w="gridLayoutTradeDetail.w"
-        :h="gridLayoutTradeDetail.h"
-        :min-h="4"
-        drag-allow-from=".drag-header"
-      >
-        <DraggableContainer header="Trade Detail">
-          <TradeDetail
-            :trade="botStore.activeBot.tradeDetail!"
-            :stake-currency="botStore.activeBot.stakeCurrency"
-          />
-        </DraggableContainer>
-      </GridItem>
-      <GridItem
-        v-if="gridLayoutChartView.h !== 0"
-        v-bind="gridItemProps"
-        class="chart-grid-item"
-        :i="gridLayoutChartView.i"
-        :x="gridLayoutChartView.x"
-        :y="gridLayoutChartView.y"
-        :w="gridLayoutChartView.w"
-        :h="gridLayoutChartView.h"
-        :min-h="6"
-        drag-allow-from=".drag-header"
-      >
-        <DraggableContainer header="Chart">
+      </DraggableContainer>
+    </section>
+
+    <section class="trade-panel pair-controls-panel">
+      <div class="flex items-center justify-center border-b border-default px-2 py-2">
+        <div class="text-center">
+          <div class="text-xs font-semibold">Pair controls</div>
+          <div class="truncate text-xs text-muted">{{ chartPair || 'Select a pair' }}</div>
+        </div>
+      </div>
+      <PairControlPanels :pair="chartPair" />
+    </section>
+
+    <section class="trade-panel chart-panel">
+      <DraggableContainer header="Chart">
           <div class="flex items-center gap-2 px-2 pt-2 pb-1">
             <span class="text-sm font-medium">Chart Timeframe</span>
             <TimeframeSelect
@@ -299,18 +165,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
             @chart-price-click="handleChartPriceClick"
           >
           </CandleChartContainer>
-        </DraggableContainer>
-      </GridItem>
-    </template>
-    </GridLayout>
-    <section class="trade-pair-controls pointer-events-auto">
-    <div class="flex items-center justify-center border-b border-default px-2 py-2">
-      <div class="text-center">
-        <div class="text-xs font-semibold">Pair controls</div>
-        <div class="truncate text-xs text-muted">{{ chartPair || 'Select a pair' }}</div>
-      </div>
-    </div>
-    <PairControlPanels :pair="chartPair" />
+      </DraggableContainer>
     </section>
   </div>
   <div class="relative z-50 shrink-0 border-t border-default bg-elevated pointer-events-auto px-3 py-1">
@@ -341,107 +196,148 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 </template>
 
 <style scoped>
-.multi-pane-grid-item {
-  width: 254.111px !important;
+.trade-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 254.111px) minmax(220px, 254.111px) minmax(0, 1fr);
+  gap: 4px;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.chart-grid-item {
-  margin-left: calc(508.222px - 25%);
-  width: calc(100% - 508.222px) !important;
+.trade-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgb(153 246 228);
+  background-color: rgb(248 250 252);
 }
 
-.multi-pane-grid-item :deep(.drag-header),
-.chart-grid-item :deep(.drag-header),
-.trade-details-panels :deep(.drag-header) {
+.trade-panel > :deep(.flex) {
+  min-height: 0;
+}
+
+.trade-panel :deep(.drag-header) {
   background-color: rgb(224 242 241);
   border-color: rgb(153 246 228);
   color: rgb(19 78 74);
 }
 
-.multi-pane-grid-item :deep(.border),
-.chart-grid-item :deep(.border),
-.trade-details-panels :deep(.border) {
+.trade-panel :deep(.border) {
   border-color: rgb(153 246 228);
 }
 
-.multi-pane-grid-item :deep(.p-0),
-.chart-grid-item :deep(.p-0),
-.trade-details-panels :deep(.p-0) {
+.trade-panel :deep(.p-0) {
   background-color: rgb(248 250 252);
 }
 
-.trade-pair-controls {
-  position: absolute;
-  top: 1px;
-  bottom: 1px;
-  left: 255.111px;
-  z-index: 40;
-  width: 254.111px;
+.multi-pane-panel,
+.pair-controls-panel,
+.chart-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.multi-pane-panel :deep(.p-0),
+.chart-panel :deep(.p-0) {
+  min-height: 0;
   overflow-y: auto;
-  border: 1px solid rgb(125 211 252);
+}
+
+.pair-controls-panel {
+  overflow-y: auto;
+  border-color: rgb(125 211 252);
   background-color: rgb(240 249 255);
 }
 
-.trade-pair-controls :deep(.pair-controls-content) {
+.pair-controls-panel :deep(.pair-controls-content) {
   grid-template-columns: minmax(0, 1fr) !important;
 }
 
-.trade-pair-controls :deep(.pair-controls-content > *) {
+.pair-controls-panel :deep(.pair-controls-content > *) {
   min-width: 0;
 }
 
-.trade-pair-controls :deep(.pair-control-card) {
+.pair-controls-panel :deep(.pair-control-card) {
   border-color: rgb(153 246 228);
   background-color: rgb(248 250 252);
 }
 
-.trade-pair-controls :deep(.pair-control-card-header) {
+.pair-controls-panel :deep(.pair-control-card-header) {
   background-color: rgb(224 242 241);
   border-color: rgb(153 246 228);
   color: rgb(19 78 74);
 }
 
 .dark {
-  .multi-pane-grid-item :deep(.drag-header),
-  .chart-grid-item :deep(.drag-header),
+  .trade-panel :deep(.drag-header),
   .trade-details-panels :deep(.drag-header) {
     background-color: rgb(19 78 74 / 0.55);
     border-color: rgb(45 212 191 / 0.45);
     color: rgb(204 251 241);
   }
 
-  .multi-pane-grid-item :deep(.border),
-  .chart-grid-item :deep(.border),
+  .trade-panel :deep(.border),
   .trade-details-panels :deep(.border) {
     border-color: rgb(45 212 191 / 0.45);
   }
 
-  .multi-pane-grid-item :deep(.p-0),
-  .chart-grid-item :deep(.p-0),
+  .trade-panel :deep(.p-0),
   .trade-details-panels :deep(.p-0) {
     background-color: rgb(15 23 42 / 0.72);
   }
 
-  .trade-pair-controls {
+  .pair-controls-panel {
     border-color: rgb(56 189 248 / 0.45);
     background-color: rgb(8 47 73 / 0.72);
   }
 
-  .trade-pair-controls :deep(.pair-control-card) {
+  .pair-controls-panel :deep(.pair-control-card) {
     border-color: rgb(45 212 191 / 0.45);
     background-color: rgb(15 23 42 / 0.72);
   }
 
-  .trade-pair-controls :deep(.pair-control-card-header) {
+  .pair-controls-panel :deep(.pair-control-card-header) {
     background-color: rgb(19 78 74 / 0.55);
     border-color: rgb(45 212 191 / 0.45);
     color: rgb(204 251 241);
   }
 }
 
+@media (max-width: 1100px) {
+  .trade-workspace {
+    grid-template-columns: minmax(210px, 254.111px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .multi-pane-panel {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .pair-controls-panel {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .chart-panel {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+}
+
 @media (max-width: 767px) {
-  .trade-pair-controls {
-    display: none;
+  .trade-workspace {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .trade-panel {
+    flex: 0 0 420px;
+  }
+
+  .chart-panel {
+    flex-basis: min(70vh, 640px);
   }
 }
 </style>
