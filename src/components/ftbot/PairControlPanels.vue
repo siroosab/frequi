@@ -78,9 +78,9 @@ onUnmounted(() => {
 
 <template>
   <div v-if="pair" class="grid gap-2 xl:grid-cols-2 p-1">
-    <UCard :ui="{ body: 'p-2 sm:p-2' }">
+    <UCard class="pair-control-card" :ui="{ body: 'p-2 sm:p-2' }">
       <template #header>
-        <div class="flex items-center justify-between gap-2">
+        <div class="pair-control-card-header flex items-center justify-between gap-2">
           <div>
             <p class="text-xs uppercase tracking-wide text-muted">Pre-trade</p>
             <h3 class="text-lg font-semibold">{{ pair }}</h3>
@@ -160,9 +160,9 @@ onUnmounted(() => {
       </div>
     </UCard>
 
-    <UCard :ui="{ body: 'p-2 sm:p-2' }">
+    <UCard class="pair-control-card" :ui="{ body: 'p-2 sm:p-2' }">
       <template #header>
-        <div class="flex items-center justify-between gap-2">
+        <div class="pair-control-card-header flex items-center justify-between gap-2">
           <div>
             <p class="text-xs uppercase tracking-wide text-muted">Open-trade risk</p>
             <h3 class="text-lg font-semibold">Risk controls</h3>

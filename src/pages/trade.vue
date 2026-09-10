@@ -386,6 +386,21 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   grid-template-columns: minmax(0, 1fr) !important;
 }
 
+.trade-pair-controls :deep(.pair-controls-content > *) {
+  min-width: 0;
+}
+
+.trade-pair-controls :deep(.pair-control-card) {
+  border-color: rgb(153 246 228);
+  background-color: rgb(248 250 252);
+}
+
+.trade-pair-controls :deep(.pair-control-card-header) {
+  background-color: rgb(224 242 241);
+  border-color: rgb(153 246 228);
+  color: rgb(19 78 74);
+}
+
 .dark {
   .multi-pane-grid-item :deep(.drag-header),
   .chart-grid-item :deep(.drag-header),
@@ -410,6 +425,17 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   .trade-pair-controls {
     border-color: rgb(56 189 248 / 0.45);
     background-color: rgb(8 47 73 / 0.72);
+  }
+
+  .trade-pair-controls :deep(.pair-control-card) {
+    border-color: rgb(45 212 191 / 0.45);
+    background-color: rgb(15 23 42 / 0.72);
+  }
+
+  .trade-pair-controls :deep(.pair-control-card-header) {
+    background-color: rgb(19 78 74 / 0.55);
+    border-color: rgb(45 212 191 / 0.45);
+    color: rgb(204 251 241);
   }
 }
 
