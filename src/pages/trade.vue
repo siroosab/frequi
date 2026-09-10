@@ -143,9 +143,9 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 
 <template>
   <div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden">
-  <div class="relative min-h-0 flex-1">
+  <div class="trade-grid-area relative min-h-0 flex-1 overflow-hidden">
     <GridLayout
-    class="trade-grid-layout relative z-0 min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden"
+    class="trade-grid-layout relative z-0 h-full min-h-0 w-full overflow-hidden"
     style="padding: 1px"
     :row-height="50"
     :layout="gridLayoutData"
@@ -342,12 +342,12 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 
 <style scoped>
 .multi-pane-grid-item {
-  width: 280px !important;
+  width: 254.111px !important;
 }
 
 .chart-grid-item {
-  margin-left: calc(560px - 25%);
-  width: calc(100% - 560px) !important;
+  margin-left: calc(508.222px - 25%);
+  width: calc(100% - 508.222px) !important;
 }
 
 .multi-pane-grid-item :deep(.drag-header),
@@ -374,9 +374,9 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   position: absolute;
   top: 1px;
   bottom: 1px;
-  left: 281px;
+  left: 255.111px;
   z-index: 40;
-  width: 280px;
+  width: 254.111px;
   overflow-y: auto;
   border: 1px solid rgb(125 211 252);
   background-color: rgb(240 249 255);
