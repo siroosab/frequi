@@ -9,6 +9,23 @@ const chartStore = useChartConfigStore();
 const lowerPanelsOpen = ref(false);
 const chartPairControls = ref<PairControlSettings>();
 
+type PriceControlField =
+  | 'long_price_min'
+  | 'long_price_max'
+  | 'short_price_min'
+  | 'short_price_max'
+  | 'stoploss_price';
+
+function handleDraggedChartPrice(event: Event) {
+  const detail = (event as CustomEvent<{ field: PriceControlField; price: number }>).detail;
+  if (!detail || typeof detail.price !== 'number' || !chartPairControls.value) return;
+  if (detail.field === 'stoploss_price') {
+    chartPairControls.value.risk.stoploss_price = detail.price;
+  } else {
+    chartPairControls.value.pre_trade[detail.field] = detail.price;
+  }
+}
+
 const chartTimeframe = computed(() => {
   const baseTimeframe = botStore.activeBot.timeframe || '';
   return isHigherTimeframe(chartStore.selectedTimeframe, baseTimeframe)
@@ -46,6 +63,8 @@ function refreshOHLCV(pair: string, columns: string[]) {
 }
 
 watch(chartPair, loadChartPairControls, { immediate: true });
+onMounted(() => window.addEventListener('pair-control-price-selected', handleDraggedChartPrice));
+onUnmounted(() => window.removeEventListener('pair-control-price-selected', handleDraggedChartPrice));
 
 const tradingTabItems = computed<TabsItem[]>(() => {
   const showText = settingsStore.multiPaneButtonsShowText;
