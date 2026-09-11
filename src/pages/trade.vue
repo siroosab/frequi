@@ -283,8 +283,11 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 }
 
 .pair-controls-panel :deep(.pair-control-card) {
+  flex: 0 0 auto;
+  border-radius: 0.375rem;
   border-color: rgb(153 246 228);
   background-color: rgb(248 250 252);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
 }
 
 .pair-controls-panel :deep(.pair-control-card-header) {
@@ -317,6 +320,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   }
 
   .pair-controls-panel :deep(.pair-control-card) {
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
     border-color: rgb(45 212 191 / 0.45);
     background-color: rgb(15 23 42 / 0.72);
   }
