@@ -31,6 +31,14 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const botStore = useBotStore();
 const plotStore = usePlotConfigStore();
+const emaPeriods = [7, 14, 50, 100];
+const enabledEmaPeriods = ref<number[]>([]);
+
+function toggleEma(period: number) {
+  enabledEmaPeriods.value = enabledEmaPeriods.value.includes(period)
+    ? enabledEmaPeriods.value.filter((value) => value !== period)
+    : [...enabledEmaPeriods.value, period];
+}
 
 const dataset = computed((): PairHistory | undefined => {
   if (props.historicView) {
@@ -159,6 +167,20 @@ watch(
         <UProgress v-if="isLoadingDataset" stroke-width="4" small label="Spinning" />
       </div>
     </div>
+    <div class="flex flex-wrap items-center gap-1 px-1 pb-1 text-xs">
+      <span class="text-muted">Indicators:</span>
+      <button
+        v-for="period in emaPeriods"
+        :key="period"
+        type="button"
+        class="rounded border px-1.5 py-0.5"
+        :class="enabledEmaPeriods.includes(period) ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
+        :aria-pressed="enabledEmaPeriods.includes(period)"
+        @click="toggleEma(period)"
+      >
+        EMA {{ period }}
+      </button>
+    </div>
     <div class="h-full flex">
       <div class="min-w-0 w-full flex-1">
         <CandleChart
@@ -177,6 +199,7 @@ watch(
           :label-side="settingsStore.chartLabelSide"
           @chart-price-click="emit('chartPriceClick', $event)"
           :pair-controls="props.pairControls"
+          :enabled-ema-periods="enabledEmaPeriods"
         />
         <div v-else class="m-auto">
           <UProgress v-if="isLoadingDataset" class="m-5 w-5 h-5" label="Spinning" />
