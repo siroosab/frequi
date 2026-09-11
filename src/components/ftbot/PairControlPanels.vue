@@ -9,7 +9,13 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const settings = ref<PairControlSettings | null>(null);
-const activePriceDirection = ref<'long' | 'short'>('long');
+type PriceField =
+  | 'long_price_min'
+  | 'long_price_max'
+  | 'short_price_min'
+  | 'short_price_max';
+
+const activePriceField = ref<PriceField>('long_price_min');
 
 async function load() {
   if (!props.pair) return;
@@ -34,19 +40,15 @@ function handleLiveUpdate(event: Event) {
   if (detail.pair === props.pair) settings.value = structuredClone(detail.settings);
 }
 
-function requestPrice(direction: 'long' | 'short') {
-  activePriceDirection.value = direction;
+function selectPriceField(field: PriceField) {
+  activePriceField.value = field;
 }
 
 function handleChartPrice(event: Event) {
   if (!settings.value) return;
   const price = (event as CustomEvent<number>).detail;
   if (typeof price !== 'number') return;
-  if (activePriceDirection.value === 'long') {
-    settings.value.pre_trade.long_price_min = price;
-  } else {
-    settings.value.pre_trade.short_price_min = price;
-  }
+  settings.value.pre_trade[activePriceField.value] = price;
 }
 
 async function save() {
@@ -106,26 +108,39 @@ onUnmounted(() => {
         />
         <div class="grid grid-cols-2 gap-2">
           <UFormField label="Long price min">
-            <UInputNumber v-model="settings.pre_trade.long_price_min" :min="0" />
+            <UInputNumber
+              v-model="settings.pre_trade.long_price_min"
+              :min="0"
+              @focus="selectPriceField('long_price_min')"
+              @click="selectPriceField('long_price_min')"
+            />
           </UFormField>
           <UFormField label="Long price max">
-            <UInputNumber v-model="settings.pre_trade.long_price_max" :min="0" />
+            <UInputNumber
+              v-model="settings.pre_trade.long_price_max"
+              :min="0"
+              @focus="selectPriceField('long_price_max')"
+              @click="selectPriceField('long_price_max')"
+            />
           </UFormField>
           <UFormField label="Short price min">
-            <UInputNumber v-model="settings.pre_trade.short_price_min" :min="0" />
+            <UInputNumber
+              v-model="settings.pre_trade.short_price_min"
+              :min="0"
+              @focus="selectPriceField('short_price_min')"
+              @click="selectPriceField('short_price_min')"
+            />
           </UFormField>
           <UFormField label="Short price max">
-            <UInputNumber v-model="settings.pre_trade.short_price_max" :min="0" />
+            <UInputNumber
+              v-model="settings.pre_trade.short_price_max"
+              :min="0"
+              @focus="selectPriceField('short_price_max')"
+              @click="selectPriceField('short_price_max')"
+            />
           </UFormField>
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <div class="grid gap-1">
-            <span class="text-sm font-medium">Entry price from chart</span>
-            <div id="entry-price-from-chart" class="flex gap-1" role="group" aria-label="Entry price from chart">
-              <UButton size="sm" variant="outline" aria-label="Use long price" @click="requestPrice('long')">Long</UButton>
-              <UButton size="sm" variant="outline" aria-label="Use short price" @click="requestPrice('short')">Short</UButton>
-            </div>
-          </div>
           <UFormField label="Leverage (1x-5x)">
             <UInputNumber v-model="settings.pre_trade.leverage" :min="1" :max="5" :step="1" />
           </UFormField>
