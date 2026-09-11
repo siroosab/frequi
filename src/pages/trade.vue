@@ -208,8 +208,8 @@ const tradingTabItems = computed<TabsItem[]>(() => {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid rgb(153 246 228);
-  background-color: rgb(248 250 252);
+  border: 1px solid rgb(125 211 252);
+  background-color: rgb(240 249 255);
 }
 
 .trade-panel > :deep(.flex) {
@@ -227,7 +227,7 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 }
 
 .trade-panel :deep(.p-0) {
-  background-color: rgb(248 250 252);
+  background-color: transparent;
 }
 
 .multi-pane-panel,
@@ -245,8 +245,6 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 
 .pair-controls-panel {
   overflow-y: auto;
-  border-color: rgb(125 211 252);
-  background-color: rgb(240 249 255);
 }
 
 .pair-controls-panel :deep(.pair-controls-content) {
@@ -297,26 +295,31 @@ const tradingTabItems = computed<TabsItem[]>(() => {
 }
 
 .dark {
+  .trade-panel {
+    border-color: rgb(56 189 248);
+    background-color: rgb(8 47 73);
+  }
+
   .trade-panel :deep(.drag-header),
   .trade-details-panels :deep(.drag-header) {
-    background-color: rgb(19 78 74 / 0.55);
-    border-color: rgb(45 212 191 / 0.45);
+    background-color: rgb(19 78 74);
+    border-color: rgb(45 212 191);
     color: rgb(204 251 241);
   }
 
   .trade-panel :deep(.border),
   .trade-details-panels :deep(.border) {
-    border-color: rgb(45 212 191 / 0.45);
+    border-color: rgb(45 212 191);
   }
 
   .trade-panel :deep(.p-0),
   .trade-details-panels :deep(.p-0) {
-    background-color: rgb(15 23 42 / 0.72);
+    background-color: transparent;
   }
 
   .pair-controls-panel {
-    border-color: rgb(56 189 248 / 0.45);
-    background-color: rgb(8 47 73 / 0.72);
+    border-color: rgb(56 189 248);
+    background-color: rgb(8 47 73);
   }
 
   .pair-controls-panel :deep(.pair-control-card) {
