@@ -13,7 +13,8 @@ type PriceField =
   | 'long_price_min'
   | 'long_price_max'
   | 'short_price_min'
-  | 'short_price_max';
+  | 'short_price_max'
+  | 'stoploss_price';
 
 const activePriceField = ref<PriceField>('long_price_min');
 
@@ -48,6 +49,12 @@ function handleChartPrice(event: Event) {
   if (!settings.value) return;
   const price = (event as CustomEvent<number>).detail;
   if (typeof price !== 'number') return;
+  if (activePriceField.value === 'stoploss_price') {
+    if (settings.value.risk.stoploss_mode === 'price') {
+      settings.value.risk.stoploss_price = price;
+    }
+    return;
+  }
   settings.value.pre_trade[activePriceField.value] = price;
 }
 
@@ -58,6 +65,7 @@ async function save() {
   try {
     const response = await botStore.activeBot.updatePairControl(props.pair, settings.value);
     settings.value = structuredClone(response.settings);
+    showAlert('Pair control settings saved successfully.', 'success');
   } catch (err) {
     error.value = axios.isAxiosError(err) && err.response?.status === 404
       ? 'Pair controls are not available on this bot yet. Deploy the custom backend first.'
@@ -213,7 +221,13 @@ onUnmounted(() => {
                 :step="0.1"
                 placeholder="e.g. -3"
               />
-              <UInputNumber v-else v-model="settings.risk.stoploss_price" :min="0" />
+              <UInputNumber
+                v-else
+                v-model="settings.risk.stoploss_price"
+                :min="0"
+                @focus="selectPriceField('stoploss_price')"
+                @click="selectPriceField('stoploss_price')"
+              />
             </UFormField>
           </div>
         </div>
