@@ -29,6 +29,7 @@ import {
   MarkAreaComponent,
   MarkLineComponent,
   MarkPointComponent,
+  BrushComponent,
   GraphicComponent,
 } from 'echarts/components';
 import { use } from 'echarts/core';
@@ -50,6 +51,7 @@ use([
   MarkAreaComponent,
   MarkLineComponent,
   MarkPointComponent,
+  BrushComponent,
 
   CandlestickChart,
   BarChart,
@@ -79,6 +81,16 @@ const emit = defineEmits<{
   chartPriceClick: [price: number];
 }>();
 
+const brushSummary = ref<{
+  start: number;
+  end: number;
+  candleCount: number;
+  entryCount: number;
+  exitCount: number;
+  tradeCount: number;
+  profitRatio: number;
+} | null>(null);
+
 const isLabelLeft = computed(() => props.labelSide === 'left');
 // Chart default options
 const MARGINLEFT = isLabelLeft.value ? '5.5%' : '1%';
@@ -101,97 +113,7 @@ const sellSignalColor = '#faba25';
 const shortexitSignalColor = '#faba25';
 
 const candleChart = useTemplateRef<InstanceType<typeof ECharts>>('candleChart');
-const chartShell = useTemplateRef<HTMLElement>('chartShell');
 const chartOptions = shallowRef<EChartsOption>({});
-const chartLayoutVersion = ref(0);
-type PriceControlField =
-  | 'long_price_min'
-  | 'long_price_max'
-  | 'short_price_min'
-  | 'short_price_max'
-  | 'stoploss_price';
-const draggingPriceField = ref<PriceControlField>();
-const draggingPrice = ref<number>();
-
-const draggablePriceLines = computed(() => {
-  const controls = props.pairControls;
-  if (!controls) return [];
-
-  const lines: Array<{ field: PriceControlField; label: string; value: number; color: string }> = [];
-  const addLine = (field: PriceControlField, label: string, value: number | null, color: string) => {
-    if (value !== null) lines.push({ field, label, value, color });
-  };
-
-  addLine('long_price_min', 'Long min', controls.pre_trade.long_price_min, '#26a69a');
-  addLine('long_price_max', 'Long max', controls.pre_trade.long_price_max, '#26a69a');
-  addLine('short_price_min', 'Short min', controls.pre_trade.short_price_min, '#ef5350');
-  addLine('short_price_max', 'Short max', controls.pre_trade.short_price_max, '#ef5350');
-  if (controls.risk.stoploss_enabled && controls.risk.stoploss_mode === 'price') {
-    addLine('stoploss_price', 'Stop loss', controls.risk.stoploss_price, '#ff5252');
-  }
-  return lines;
-});
-
-function lineValue(line: { field: PriceControlField; value: number }) {
-  return draggingPriceField.value === line.field && draggingPrice.value !== undefined
-    ? draggingPrice.value
-    : line.value;
-}
-
-function priceToPixel(price: number): number {
-  const chartElement = candleChart.value as unknown as {
-    convertToPixel?: (finder: { yAxisIndex: number }, value: number | [number, number]) => number | number[];
-  } | null;
-  chartLayoutVersion.value;
-  const result = chartElement?.convertToPixel?.({ yAxisIndex: 0 }, price);
-  return Array.isArray(result) ? (result[1] ?? 0) : (result ?? 0);
-}
-
-function refreshPriceLines() {
-  nextTick(() => {
-    chartLayoutVersion.value += 1;
-  });
-}
-
-function priceFromPointer(event: PointerEvent): number | undefined {
-  const chartElement = candleChart.value as unknown as {
-    convertFromPixel?: (finder: { yAxisIndex: number }, value: [number, number]) => number[];
-  } | null;
-  const shell = chartShell.value;
-  if (!chartElement?.convertFromPixel || !shell) return;
-  const rect = shell.getBoundingClientRect();
-  const result = chartElement.convertFromPixel(
-    { yAxisIndex: 0 },
-    [event.clientX - rect.left, event.clientY - rect.top],
-  );
-  const price = result?.[1];
-  return typeof price === 'number' && Number.isFinite(price) ? price : undefined;
-}
-
-function startPriceDrag(field: PriceControlField, event: PointerEvent) {
-  event.preventDefault();
-  draggingPriceField.value = field;
-  const price = priceFromPointer(event);
-  if (price !== undefined) draggingPrice.value = price;
-  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-}
-
-function movePriceDrag(event: PointerEvent) {
-  if (!draggingPriceField.value) return;
-  const price = priceFromPointer(event);
-  if (price !== undefined) draggingPrice.value = price;
-}
-
-function finishPriceDrag(event: PointerEvent) {
-  const field = draggingPriceField.value;
-  const price = draggingPrice.value;
-  if (field && price !== undefined) {
-    window.dispatchEvent(new CustomEvent('pair-control-price-selected', { detail: { field, price } }));
-  }
-  draggingPriceField.value = undefined;
-  draggingPrice.value = undefined;
-  (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
-}
 
 const strategy = computed(() => {
   return props.dataset ? props.dataset.strategy : '';
@@ -228,6 +150,58 @@ usePercentageTool(
 );
 
 const { formatCandleTooltip } = useCandleChartTooltip(chartOptions);
+
+function clearBrushSelection() {
+  brushSummary.value = null;
+}
+
+function handleBrushSelected(event: unknown) {
+  const batch = (event as { batch?: Array<{ selected?: Array<{ dataIndex?: number[] }> }> }).batch;
+  const selected = batch?.[0]?.selected?.[0]?.dataIndex ?? [];
+  if (selected.length === 0) {
+    clearBrushSelection();
+    return;
+  }
+
+  const columns = props.dataset.columns;
+  const dateColumn = columns.indexOf('__date_ts');
+  const entryColumns = ['_buy_signal_close', '_enter_long_signal_close', '_enter_short_signal_close'];
+  const exitColumns = ['_sell_signal_close', '_exit_long_signal_close', '_exit_short_signal_close'];
+  const timestamps = selected
+    .map((index) => props.dataset.data[index]?.[dateColumn])
+    .filter((value): value is number => typeof value === 'number');
+  if (timestamps.length === 0) {
+    clearBrushSelection();
+    return;
+  }
+
+  const start = Math.min(...timestamps);
+  const end = Math.max(...timestamps);
+  const countActiveSignals = (signalColumns: string[]) =>
+    selected.reduce((count, index) => {
+      const hasSignal = signalColumns.some((column) => {
+        const value = props.dataset.data[index]?.[columns.indexOf(column)];
+        return typeof value === 'number' && value !== 0;
+      });
+      return count + (hasSignal ? 1 : 0);
+    }, 0);
+  const entryCount = countActiveSignals(entryColumns);
+  const exitCount = countActiveSignals(exitColumns);
+  const rangeTrades = filteredTrades.value.filter((trade) => {
+    const timestamp = trade.open_timestamp;
+    return timestamp >= start && timestamp <= end;
+  });
+
+  brushSummary.value = {
+    start,
+    end,
+    candleCount: selected.length,
+    entryCount,
+    exitCount,
+    tradeCount: rangeTrades.length,
+    profitRatio: rangeTrades.reduce((total, trade) => total + (trade.profit_ratio ?? 0), 0),
+  };
+}
 
 function addLegend(name: string, position: number | undefined = undefined) {
   if (
@@ -739,7 +713,6 @@ function updateChart(initial = false) {
     replaceMerge: ['series', 'grid', 'yAxis', 'xAxis', 'legend'],
     notMerge: initial,
   });
-  refreshPriceLines();
 }
 
 function initializeChartOptions() {
@@ -767,6 +740,23 @@ function initializeChartOptions() {
       },
       pageIconColor: props.theme === 'dark' ? '#aaa' : '#2f4554',
       pageIconInactiveColor: props.theme === 'dark' ? '#2f4554' : '#aaa',
+    },
+    toolbox: {
+      right: '5%',
+      top: 24,
+      feature: {
+        brush: {
+          type: ['lineX', 'clear'],
+        },
+      },
+    },
+    brush: {
+      toolbox: ['lineX', 'clear'],
+      xAxisIndex: 'all',
+      brushLink: 'all',
+      outOfBrush: {
+        colorAlpha: 0.2,
+      },
     },
     tooltip: {
       show: true,
@@ -888,10 +878,7 @@ function handleChartClick(params: { value?: unknown }) {
 
 onMounted(() => {
   initializeChartOptions();
-  window.addEventListener('resize', refreshPriceLines);
 });
-
-onUnmounted(() => window.removeEventListener('resize', refreshPriceLines));
 
 watch([() => props.useUTC, () => props.theme, () => props.plotConfig], () =>
   initializeChartOptions(),
@@ -906,7 +893,7 @@ watch(
 </script>
 
 <template>
-  <div ref="chartShell" class="relative h-full w-full">
+  <div class="h-full w-full">
     <ECharts
       v-if="hasData"
       ref="candleChart"
@@ -914,26 +901,31 @@ watch(
       autoresize
       manual-update
       @click="handleChartClick"
-      @datazoom="refreshPriceLines"
-      @rendered="refreshPriceLines"
+      @brushselected="handleBrushSelected"
+      @brushend="handleBrushSelected"
     />
     <div
-      v-for="line in draggablePriceLines"
-      :key="line.field"
-      class="price-control-line"
-      :style="{ '--line-color': line.color, top: `${priceToPixel(lineValue(line))}px` }"
-      :title="`Drag ${line.label}`"
-      @pointerdown="startPriceDrag(line.field, $event)"
-      @pointermove="movePriceDrag"
-      @pointerup="finishPriceDrag"
-      @pointercancel="finishPriceDrag"
+      v-if="brushSummary"
+      class="brush-summary absolute bottom-2 left-2 z-10 rounded-md border px-2 py-1 text-xs"
     >
-      <span>{{ line.label }}</span>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span>{{ timestampms(brushSummary.start) }} - {{ timestampms(brushSummary.end) }}</span>
+        <span>{{ brushSummary.candleCount }} candles</span>
+        <span>{{ brushSummary.entryCount }} entries</span>
+        <span>{{ brushSummary.exitCount }} exits</span>
+        <span>{{ brushSummary.tradeCount }} trades</span>
+        <span>Profit: {{ (brushSummary.profitRatio * 100).toFixed(2) }}%</span>
+        <button type="button" class="font-semibold" @click="clearBrushSelection">Clear</button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="css">
+.h-full.w-full {
+  position: relative;
+}
+
 .echarts {
   width: 100%;
   min-height: 200px;
@@ -942,28 +934,15 @@ watch(
   height: 100%;
 }
 
-.price-control-line {
-  position: absolute;
-  left: 5.5%;
-  right: 5.5%;
-  z-index: 5;
-  height: 14px;
-  border-top: 2px dashed var(--line-color);
-  cursor: ns-resize;
-  pointer-events: auto;
-  transform: translateY(-50%);
+.brush-summary {
+  background: rgb(240 249 255 / 0.94);
+  border-color: rgb(125 211 252);
+  color: rgb(19 78 74);
 }
 
-.price-control-line span {
-  position: absolute;
-  top: -1px;
-  right: 0;
-  padding: 0 4px;
-  color: var(--line-color);
-  background: rgb(15 23 42 / 0.8);
-  font-size: 10px;
-  line-height: 12px;
-  white-space: nowrap;
-  transform: translateY(-100%);
+:global(.dark) .brush-summary {
+  background: rgb(8 47 73 / 0.94);
+  border-color: rgb(56 189 248);
+  color: rgb(204 251 241);
 }
 </style>

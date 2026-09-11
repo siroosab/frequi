@@ -58,17 +58,6 @@ function handleChartPrice(event: Event) {
   settings.value.pre_trade[activePriceField.value] = price;
 }
 
-function handleDraggedChartPrice(event: Event) {
-  if (!settings.value) return;
-  const detail = (event as CustomEvent<{ field: PriceField; price: number }>).detail;
-  if (!detail || typeof detail.price !== 'number') return;
-  if (detail.field === 'stoploss_price') {
-    if (settings.value.risk.stoploss_mode === 'price') settings.value.risk.stoploss_price = detail.price;
-    return;
-  }
-  settings.value.pre_trade[detail.field] = detail.price;
-}
-
 async function save() {
   if (!settings.value || !props.pair) return;
   saving.value = true;
@@ -91,11 +80,9 @@ async function save() {
 watch(() => props.pair, load, { immediate: true });
 onMounted(() => window.addEventListener('pair-control-updated', handleLiveUpdate));
 onMounted(() => window.addEventListener('chart-price-selected', handleChartPrice));
-onMounted(() => window.addEventListener('pair-control-price-selected', handleDraggedChartPrice));
 onUnmounted(() => {
   window.removeEventListener('pair-control-updated', handleLiveUpdate);
   window.removeEventListener('chart-price-selected', handleChartPrice);
-  window.removeEventListener('pair-control-price-selected', handleDraggedChartPrice);
 });
 </script>
 
