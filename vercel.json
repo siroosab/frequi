@@ -8,6 +8,10 @@
   },
   "rewrites": [
     {
+      "source": "/coinex-api/:path*",
+      "destination": "https://api.coinex.com/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

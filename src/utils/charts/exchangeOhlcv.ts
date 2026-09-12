@@ -138,7 +138,18 @@ async function fetchCoinexFuturesOhlcv(
     throw new Error(`CoinEx Futures request failed (${response.status})`);
   }
 
-  const payload = (await response.json()) as { code?: number; message?: string; data?: CoinexKline[] };
+  const responseText = await response.text();
+  let payload: { code?: number; message?: string; data?: CoinexKline[] };
+  try {
+    payload = JSON.parse(responseText) as {
+      code?: number;
+      message?: string;
+      data?: CoinexKline[];
+    };
+  } catch {
+    const contentType = response.headers.get('content-type') || 'unknown content type';
+    throw new Error(`CoinEx Futures returned a non-JSON response (${contentType})`);
+  }
   if (payload.code !== undefined && payload.code !== 0) {
     throw new Error(`CoinEx Futures: ${payload.message || 'market data request failed'}`);
   }
