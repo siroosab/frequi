@@ -98,7 +98,11 @@ export async function fetchExchangeOhlcv(
 
   const exchange = new ExchangeClass({
     enableRateLimit: true,
-    options: { defaultType: futures ? 'swap' : 'spot' },
+    options: {
+      defaultType: futures ? 'swap' : 'spot',
+      // OHLCV does not require deposit/withdraw currency metadata.
+      fetchCurrencies: false,
+    },
   });
   try {
     const markets = await exchange.loadMarkets();
