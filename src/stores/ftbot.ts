@@ -406,8 +406,8 @@ export function createBotSubStore(botId: string, botName: string) {
       timeframe: string,
       exchangeId = botState.value.exchange,
       futures = botState.value.trading_mode === 'futures',
-    ) {
-      if (!pair || !timeframe) return;
+    ): Promise<boolean> {
+      if (!pair || !timeframe) return false;
       candleDataStatus.value = LoadingStatus.loading;
       try {
         const result = await fetchExchangeOhlcv(
@@ -421,10 +421,12 @@ export function createBotSubStore(botId: string, botName: string) {
           [`${pair}__${timeframe}`]: { pair, timeframe, data: result },
         };
         candleDataStatus.value = LoadingStatus.success;
+        return true;
       } catch (err) {
         console.error('Exchange OHLCV error', err);
         candleDataStatus.value = LoadingStatus.error;
         showAlert(err instanceof Error ? err.message : 'Failed to fetch exchange candles', 'error');
+        return false;
       }
     }
 

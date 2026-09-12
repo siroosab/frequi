@@ -12,6 +12,8 @@ const props = withDefaults(
     strategy?: string;
     sliderPosition?: ChartSliderPosition;
     pairControls?: PairControlSettings;
+    binanceFuturesEnabled?: boolean;
+    binanceFuturesDisabled?: boolean;
   }>(),
   {
     trades: () => [],
@@ -25,6 +27,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
   chartPriceClick: [price: number];
+  binanceFuturesChange: [enabled: boolean];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -214,8 +217,11 @@ const singlePairSelection = computed({
           :trades="props.trades"
           :slider-position="props.sliderPosition"
           :is-single-pair-view="isSinglePairView"
+          :binance-futures-enabled="props.binanceFuturesEnabled"
+          :binance-futures-disabled="props.binanceFuturesDisabled"
           @refresh-data="refresh()"
           @chart-price-click="emit('chartPriceClick', $event)"
+          @binance-futures-change="emit('binanceFuturesChange', $event)"
           :pair-controls="props.pairControls"
         >
         </SingleCandleChartContainer>

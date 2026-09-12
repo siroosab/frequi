@@ -12,6 +12,8 @@ const props = withDefaults(
     sliderPosition?: ChartSliderPosition;
     isSinglePairView?: boolean;
     pairControls?: PairControlSettings;
+    binanceFuturesEnabled?: boolean;
+    binanceFuturesDisabled?: boolean;
   }>(),
   {
     trades: () => [],
@@ -25,6 +27,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
   chartPriceClick: [price: number];
+  binanceFuturesChange: [enabled: boolean];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -180,6 +183,17 @@ watch(
       >
         EMA {{ period }}
       </button>
+      <button
+        type="button"
+        class="rounded border px-1.5 py-0.5"
+        :class="binanceFuturesEnabled ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
+        :aria-pressed="binanceFuturesEnabled"
+        :disabled="binanceFuturesDisabled"
+        :title="binanceFuturesDisabled ? 'Binance is already the primary exchange' : 'Use Binance Futures candles'"
+        @click="emit('binanceFuturesChange', !binanceFuturesEnabled)"
+      >
+        Binance Futures
+      </button>
     </div>
     <div class="h-full flex">
       <div class="min-w-0 w-full flex-1">
@@ -200,6 +214,8 @@ watch(
           @chart-price-click="emit('chartPriceClick', $event)"
           :pair-controls="props.pairControls"
           :enabled-ema-periods="enabledEmaPeriods"
+          :binance-futures-enabled="binanceFuturesEnabled"
+          :binance-futures-disabled="binanceFuturesDisabled"
         />
         <div v-else class="m-auto">
           <UProgress v-if="isLoadingDataset" class="m-5 w-5 h-5" label="Spinning" />

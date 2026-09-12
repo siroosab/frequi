@@ -8,6 +8,10 @@ const settingsStore = useSettingsStore();
 const chartStore = useChartConfigStore();
 const lowerPanelsOpen = ref(false);
 const chartPairControls = ref<PairControlSettings>();
+const binanceFuturesEnabled = ref(false);
+const isPrimaryBinance = computed(
+  () => botStore.activeBot.botState.exchange?.toLowerCase() === 'binance',
+);
 
 const chartTimeframe = computed(() => {
   const baseTimeframe = botStore.activeBot.timeframe || '';
@@ -34,6 +38,10 @@ function handleChartPriceClick(price: number) {
 }
 
 function refreshOHLCV(pair: string, columns: string[]) {
+  if (binanceFuturesEnabled.value) {
+    void botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value, 'binance', true);
+    return;
+  }
   if (isHigherTimeframe(chartTimeframe.value, botStore.activeBot.timeframe)) {
     botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value);
     return;
@@ -43,6 +51,34 @@ function refreshOHLCV(pair: string, columns: string[]) {
     timeframe: chartTimeframe.value,
     columns: columns,
   });
+}
+
+async function handleBinanceFuturesChange(enabled: boolean) {
+  if (isPrimaryBinance.value) {
+    showAlert('Binance is already the primary exchange.', 'info');
+    return;
+  }
+
+  binanceFuturesEnabled.value = enabled;
+  if (!chartPair.value) return;
+
+  if (enabled) {
+    const loaded = await botStore.activeBot.getExchangePairCandles(
+      chartPair.value,
+      chartTimeframe.value,
+      'binance',
+      true,
+    );
+    if (loaded) {
+      showAlert('Binance Futures candles loaded successfully.', 'success');
+    } else {
+      binanceFuturesEnabled.value = false;
+    }
+    return;
+  }
+
+  refreshOHLCV(chartPair.value, []);
+  showAlert('Primary exchange candles restored.', 'success');
 }
 
 watch(chartPair, loadChartPairControls, { immediate: true });
@@ -163,6 +199,9 @@ const tradingTabItems = computed<TabsItem[]>(() => {
             :pair-controls="chartPairControls"
             @refresh-data="refreshOHLCV"
             @chart-price-click="handleChartPriceClick"
+            @binance-futures-change="handleBinanceFuturesChange"
+            :binance-futures-enabled="binanceFuturesEnabled"
+            :binance-futures-disabled="isPrimaryBinance"
           >
           </CandleChartContainer>
       </DraggableContainer>
