@@ -18,6 +18,56 @@ type PriceField =
 
 const activePriceField = ref<PriceField>('long_price_min');
 
+const stakeCurrency = computed(() => botStore.activeBot.stakeCurrency || 'USDT');
+const stakeCurrencyDecimals = computed(() => botStore.activeBot.stakeCurrencyDecimals ?? 2);
+const availableCapital = computed<number | undefined>(() => {
+  const stakeBalance = botStore.activeBot.balance.currencies?.find(
+    (currency) => currency.currency === stakeCurrency.value,
+  );
+
+  if (!stakeBalance) return undefined;
+
+  return botStore.activeBot.botFeatures.hasBotBalance
+    ? (stakeBalance.bot_owned ?? stakeBalance.free)
+    : stakeBalance.free;
+});
+
+const entryAmount = computed<number | undefined>(() => {
+  if (!settings.value || availableCapital.value === undefined) return undefined;
+  return settings.value.pre_trade.entry_size_mode === 'percent'
+    ? (availableCapital.value * settings.value.pre_trade.entry_size_value) / 100
+    : settings.value.pre_trade.entry_size_value;
+});
+
+const entryPercent = computed<number | undefined>(() => {
+  if (!settings.value || availableCapital.value === undefined || availableCapital.value <= 0) {
+    return undefined;
+  }
+  return settings.value.pre_trade.entry_size_mode === 'percent'
+    ? settings.value.pre_trade.entry_size_value
+    : (settings.value.pre_trade.entry_size_value / availableCapital.value) * 100;
+});
+
+const leveragedEntryAmount = computed<number | undefined>(() => {
+  if (entryAmount.value === undefined || !settings.value) return undefined;
+  return entryAmount.value * settings.value.pre_trade.leverage;
+});
+
+const entryValueLabel = computed(() =>
+  settings.value?.pre_trade.entry_size_mode === 'percent'
+    ? 'Capital %'
+    : `${stakeCurrency.value} amount`,
+);
+
+function formatAmount(value: number | undefined) {
+  return value === undefined
+    ? 'Unavailable'
+    : value.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: stakeCurrencyDecimals.value,
+      });
+}
+
 async function load() {
   if (!props.pair) return;
   loading.value = true;
@@ -119,6 +169,7 @@ onUnmounted(() => {
             <UInputNumber
               v-model="settings.pre_trade.long_price_min"
               :min="0"
+              title="Focus this field, then click the chart to set the long entry minimum price."
               @focus="selectPriceField('long_price_min')"
               @click="selectPriceField('long_price_min')"
             />
@@ -127,6 +178,7 @@ onUnmounted(() => {
             <UInputNumber
               v-model="settings.pre_trade.long_price_max"
               :min="0"
+              title="Focus this field, then click the chart to set the long entry maximum price."
               @focus="selectPriceField('long_price_max')"
               @click="selectPriceField('long_price_max')"
             />
@@ -135,6 +187,7 @@ onUnmounted(() => {
             <UInputNumber
               v-model="settings.pre_trade.short_price_min"
               :min="0"
+              title="Focus this field, then click the chart to set the short entry minimum price."
               @focus="selectPriceField('short_price_min')"
               @click="selectPriceField('short_price_min')"
             />
@@ -143,6 +196,7 @@ onUnmounted(() => {
             <UInputNumber
               v-model="settings.pre_trade.short_price_max"
               :min="0"
+              title="Focus this field, then click the chart to set the short entry maximum price."
               @focus="selectPriceField('short_price_max')"
               @click="selectPriceField('short_price_max')"
             />
@@ -157,9 +211,27 @@ onUnmounted(() => {
           <UFormField label="Entry size mode">
             <USelect v-model="settings.pre_trade.entry_size_mode" :items="['percent', 'usdt']" />
           </UFormField>
-          <UFormField :label="settings.pre_trade.entry_size_mode === 'percent' ? 'Capital %' : 'USDT amount'">
+          <UFormField :label="entryValueLabel">
             <UInputNumber v-model="settings.pre_trade.entry_size_value" :min="0" :max="settings.pre_trade.entry_size_mode === 'percent' ? 100 : undefined" />
           </UFormField>
+        </div>
+        <div class="grid gap-1 rounded border border-default p-2 text-xs">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-muted">Available capital</span>
+            <span>{{ formatAmount(availableCapital) }} {{ stakeCurrency }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-muted">Equivalent entry amount</span>
+            <span>{{ formatAmount(entryAmount) }} {{ stakeCurrency }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-muted">Equivalent capital</span>
+            <span>{{ entryPercent === undefined ? 'Unavailable' : `${entryPercent.toFixed(2)}%` }}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2 font-semibold">
+            <span class="text-muted">Leveraged position value</span>
+            <span>{{ formatAmount(leveragedEntryAmount) }} {{ stakeCurrency }}</span>
+          </div>
         </div>
         <div class="grid gap-1">
           <label for="entry-signal" class="text-sm font-medium">Entry signal</label>
@@ -227,6 +299,7 @@ onUnmounted(() => {
                 v-else
                 v-model="settings.risk.stoploss_price"
                 :min="0"
+                title="Focus this field, then click the chart to set the stop-loss price. Available when Stop loss method is Price."
                 @focus="selectPriceField('stoploss_price')"
                 @click="selectPriceField('stoploss_price')"
               />
@@ -304,7 +377,13 @@ onUnmounted(() => {
     <div class="xl:col-span-2 flex items-center justify-between gap-3">
       <p v-if="error" class="text-sm text-error">{{ error }}</p>
       <span v-else class="text-xs text-muted">Changes are sent live to the bot.</span>
-      <UButton :loading="saving" :disabled="loading || !settings" icon="mdi:content-save" @click="save">
+      <UButton
+        :loading="saving"
+        :disabled="loading || !settings"
+        title="Save the current Pre-trade and Open-trade risk settings."
+        icon="mdi:content-save"
+        @click="save"
+      >
         Save pair controls
       </UButton>
     </div>

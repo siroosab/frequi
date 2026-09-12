@@ -179,6 +179,7 @@ watch(
         class="rounded border px-1.5 py-0.5"
         :class="enabledEmaPeriods.includes(period) ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
         :aria-pressed="enabledEmaPeriods.includes(period)"
+        :title="`Toggle EMA ${period}. Shows the exponential moving average over ${period} candles on the current timeframe.`"
         @click="toggleEma(period)"
       >
         EMA {{ period }}
@@ -186,10 +187,11 @@ watch(
       <button
         type="button"
         class="rounded border px-1.5 py-0.5"
+        
         :class="binanceFuturesEnabled ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
         :aria-pressed="binanceFuturesEnabled"
         :disabled="binanceFuturesDisabled"
-        :title="binanceFuturesDisabled ? 'Binance is already the primary exchange' : 'Use Binance Futures candles'"
+        :title="binanceFuturesDisabled ? 'Binance is already the primary exchange, so no alternate data source is needed.' : 'Toggle Binance Futures candles instead of the primary exchange candles for this chart.'"
         @click="emit('binanceFuturesChange', !binanceFuturesEnabled)"
       >
         Binance Futures

@@ -170,7 +170,10 @@ const tradingTabItems = computed<TabsItem[]>(() => {
       </DraggableContainer>
     </section>
 
-    <section class="trade-panel pair-controls-panel">
+    <section
+      class="trade-panel pair-controls-panel"
+      title="Pair controls: configure entry rules and open-trade risk. Focus a price field, then click the chart to set its value."
+    >
       <div class="flex items-center justify-center border-b border-default px-2 py-2">
         <div class="text-center">
           <div class="text-xs font-semibold">Pair controls</div>
