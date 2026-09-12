@@ -101,6 +101,11 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         ws: true,
       },
+      '/coinex-api': {
+        target: 'https://api.coinex.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/coinex-api/, ''),
+      },
     },
     host: '127.0.0.1',
     port: 3000,

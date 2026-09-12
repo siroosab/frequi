@@ -126,7 +126,7 @@ async function fetchCoinexFuturesOhlcv(
   const period = COINEX_PERIODS[timeframe];
   if (!period) throw new Error(`CoinEx Futures does not support timeframe ${timeframe}`);
 
-  const url = new URL('https://api.coinex.com/v2/futures/kline');
+  const url = new URL('/coinex-api/v2/futures/kline', window.location.origin);
   url.search = new URLSearchParams({
     market: coinexMarket(botPair),
     period,
