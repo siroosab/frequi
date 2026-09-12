@@ -161,7 +161,8 @@ onUnmounted(() => {
             <UInputNumber v-model="settings.pre_trade.entry_size_value" :min="0" :max="settings.pre_trade.entry_size_mode === 'percent' ? 100 : undefined" />
           </UFormField>
         </div>
-        <UFormField label="Entry signal">
+        <div class="grid gap-1">
+          <label for="entry-signal" class="text-sm font-medium">Entry signal</label>
           <USegmentedControl
             id="entry-signal"
             v-model="settings.pre_trade.entry_signal"
@@ -174,8 +175,9 @@ onUnmounted(() => {
             value-key="value"
             label-key="label"
           />
-        </UFormField>
-        <UFormField label="Entry strictness">
+        </div>
+        <div class="grid gap-1">
+          <label for="entry-strictness" class="text-sm font-medium">Entry strictness</label>
           <USlider
             id="entry-strictness"
             v-model="settings.pre_trade.entry_strictness"
@@ -185,7 +187,7 @@ onUnmounted(() => {
             aria-label="Entry strictness"
           />
           <div class="flex justify-between text-xs text-muted"><span>Easy</span><span>{{ settings.pre_trade.entry_strictness }}%</span><span>Strict</span></div>
-        </UFormField>
+        </div>
         <UFormField label="Entry tag">
           <UInput v-model="settings.pre_trade.entry_tag" placeholder="Optional tag" />
         </UFormField>

@@ -29,8 +29,6 @@ import {
   MarkAreaComponent,
   MarkLineComponent,
   MarkPointComponent,
-  BrushComponent,
-  GraphicComponent,
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -51,14 +49,11 @@ use([
   MarkAreaComponent,
   MarkLineComponent,
   MarkPointComponent,
-  BrushComponent,
-
   CandlestickChart,
   BarChart,
   LineChart,
   ScatterChart,
   CanvasRenderer,
-  GraphicComponent,
 ]);
 
 const props = defineProps<{
@@ -81,16 +76,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   chartPriceClick: [price: number];
 }>();
-
-const brushSummary = ref<{
-  start: number;
-  end: number;
-  candleCount: number;
-  entryCount: number;
-  exitCount: number;
-  tradeCount: number;
-  profitRatio: number;
-} | null>(null);
 
 const isLabelLeft = computed(() => props.labelSide === 'left');
 // Chart default options
@@ -163,59 +148,6 @@ usePercentageTool(
 );
 
 const { formatCandleTooltip } = useCandleChartTooltip(chartOptions);
-
-function clearBrushSelection() {
-  brushSummary.value = null;
-  candleChart.value?.dispatchAction({ type: 'brush', command: 'clear', areas: [] });
-}
-
-function handleBrushSelected(event: unknown) {
-  const batch = (event as { batch?: Array<{ selected?: Array<{ dataIndex?: number[] }> }> }).batch;
-  const selected = batch?.[0]?.selected?.[0]?.dataIndex ?? [];
-  if (selected.length === 0) {
-    clearBrushSelection();
-    return;
-  }
-
-  const columns = props.dataset.columns;
-  const dateColumn = columns.indexOf('__date_ts');
-  const entryColumns = ['_buy_signal_close', '_enter_long_signal_close', '_enter_short_signal_close'];
-  const exitColumns = ['_sell_signal_close', '_exit_long_signal_close', '_exit_short_signal_close'];
-  const timestamps = selected
-    .map((index) => props.dataset.data[index]?.[dateColumn])
-    .filter((value): value is number => typeof value === 'number');
-  if (timestamps.length === 0) {
-    clearBrushSelection();
-    return;
-  }
-
-  const start = Math.min(...timestamps);
-  const end = Math.max(...timestamps);
-  const countActiveSignals = (signalColumns: string[]) =>
-    selected.reduce((count, index) => {
-      const hasSignal = signalColumns.some((column) => {
-        const value = props.dataset.data[index]?.[columns.indexOf(column)];
-        return typeof value === 'number' && value !== 0;
-      });
-      return count + (hasSignal ? 1 : 0);
-    }, 0);
-  const entryCount = countActiveSignals(entryColumns);
-  const exitCount = countActiveSignals(exitColumns);
-  const rangeTrades = filteredTrades.value.filter((trade) => {
-    const timestamp = trade.open_timestamp;
-    return timestamp >= start && timestamp <= end;
-  });
-
-  brushSummary.value = {
-    start,
-    end,
-    candleCount: selected.length,
-    entryCount,
-    exitCount,
-    tradeCount: rangeTrades.length,
-    profitRatio: rangeTrades.reduce((total, trade) => total + (trade.profit_ratio ?? 0), 0),
-  };
-}
 
 function addLegend(name: string, position: number | undefined = undefined) {
   if (
@@ -523,7 +455,7 @@ function updateChart(initial = false) {
                   const tag = Array.isArray(value[1])
                     ? value[1][signal.colTooltip]?.toString()
                     : value[1]?.toString();
-                  const tagShort = tag.substring(0, 100);
+                  const tagShort = (tag ?? '').substring(0, 100);
 
                   // Show both prefix and tag
                   // Value would be in value[0] - but we don't show this to avoid showing the same data multiple times as it would correspond to the close price of the candle.
@@ -785,22 +717,6 @@ function initializeChartOptions() {
       pageIconColor: props.theme === 'dark' ? '#aaa' : '#2f4554',
       pageIconInactiveColor: props.theme === 'dark' ? '#2f4554' : '#aaa',
     },
-    toolbox: {
-      show: false,
-      feature: {
-        brush: {
-          type: ['lineX', 'clear'],
-        },
-      },
-    },
-    brush: {
-      toolbox: ['lineX', 'clear'],
-      xAxisIndex: 'all',
-      brushLink: 'all',
-      outOfBrush: {
-        colorAlpha: 0.2,
-      },
-    },
     tooltip: {
       show: true,
       trigger: 'axis',
@@ -947,23 +863,7 @@ watch(
       autoresize
       manual-update
       @click="handleChartClick"
-      @brushselected="handleBrushSelected"
-      @brushend="handleBrushSelected"
     />
-    <div
-      v-if="brushSummary"
-      class="brush-summary absolute bottom-2 left-2 z-10 rounded-md border px-2 py-1 text-xs"
-    >
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span>{{ timestampms(brushSummary.start) }} - {{ timestampms(brushSummary.end) }}</span>
-        <span>{{ brushSummary.candleCount }} candles</span>
-        <span>{{ brushSummary.entryCount }} entries</span>
-        <span>{{ brushSummary.exitCount }} exits</span>
-        <span>{{ brushSummary.tradeCount }} trades</span>
-        <span>Profit: {{ (brushSummary.profitRatio * 100).toFixed(2) }}%</span>
-        <button type="button" class="font-semibold" @click="clearBrushSelection">Clear</button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -980,15 +880,4 @@ watch(
   height: 100%;
 }
 
-.brush-summary {
-  background: rgb(240 249 255 / 0.94);
-  border-color: rgb(125 211 252);
-  color: rgb(19 78 74);
-}
-
-:global(.dark) .brush-summary {
-  background: rgb(8 47 73 / 0.94);
-  border-color: rgb(56 189 248);
-  color: rgb(204 251 241);
-}
 </style>
