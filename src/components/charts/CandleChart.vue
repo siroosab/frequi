@@ -76,6 +76,7 @@ const props = defineProps<{
   startCandleCount: number;
   pairControls?: PairControlSettings;
   enabledEmaPeriods?: number[];
+  enabledIndicators?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -452,6 +453,32 @@ function updateChart(initial = false) {
         },
       });
       addLegend(`EMA ${period}`);
+    }
+
+    const indicatorColumns: Record<string, string[]> = {
+      RSI: ['rsi'],
+      MACD: ['macd', 'macdsignal'],
+      SMA: ['sma'],
+      'Bollinger Bands': ['bb_upperband', 'bb_lowerband'],
+      ATR: ['atr'],
+      VWAP: ['vwap'],
+    };
+    for (const indicator of props.enabledIndicators ?? []) {
+      for (const columnName of indicatorColumns[indicator] ?? []) {
+        const columnIndex = columns.indexOf(columnName);
+        if (columnIndex < 0) continue;
+        const seriesName = indicator === 'Bollinger Bands' ? `Bollinger ${columnName.includes('upper') ? 'upper' : 'lower'}` : indicator;
+        options.series.push({
+          name: seriesName,
+          type: 'line',
+          xAxisIndex: 0,
+          yAxisIndex: 0,
+          encode: { x: colDate, y: columnIndex },
+          showSymbol: false,
+          lineStyle: { width: 1.5 },
+        });
+        addLegend(seriesName);
+      }
     }
   }
 
@@ -931,7 +958,13 @@ watch([() => props.useUTC, () => props.theme, () => props.plotConfig], () =>
 );
 
 watch(
-  [() => props.dataset, () => props.heikinAshi, () => props.showMarkArea, () => props.enabledEmaPeriods],
+  [
+    () => props.dataset,
+    () => props.heikinAshi,
+    () => props.showMarkArea,
+    () => props.enabledEmaPeriods,
+    () => props.enabledIndicators,
+  ],
   () => updateChart(),
 );
 
