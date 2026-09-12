@@ -31,21 +31,13 @@ const settingsStore = useSettingsStore();
 const colorStore = useColorStore();
 const botStore = useBotStore();
 const plotStore = usePlotConfigStore();
-const emaPeriods = [7, 14, 50, 100];
+const emaPeriods = [7, 14, 21, 50, 100, 200];
 const enabledEmaPeriods = ref<number[]>([]);
-const indicatorOptions = ['RSI', 'MACD', 'SMA', 'Bollinger Bands', 'ATR', 'VWAP'];
-const enabledIndicators = ref<string[]>([]);
 
 function toggleEma(period: number) {
   enabledEmaPeriods.value = enabledEmaPeriods.value.includes(period)
     ? enabledEmaPeriods.value.filter((value) => value !== period)
     : [...enabledEmaPeriods.value, period];
-}
-
-function toggleIndicator(indicator: string) {
-  enabledIndicators.value = enabledIndicators.value.includes(indicator)
-    ? enabledIndicators.value.filter((value) => value !== indicator)
-    : [...enabledIndicators.value, indicator];
 }
 
 const dataset = computed((): PairHistory | undefined => {
@@ -188,17 +180,6 @@ watch(
       >
         EMA {{ period }}
       </button>
-      <button
-        v-for="indicator in indicatorOptions"
-        :key="indicator"
-        type="button"
-        class="rounded border px-1.5 py-0.5"
-        :class="enabledIndicators.includes(indicator) ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
-        :aria-pressed="enabledIndicators.includes(indicator)"
-        @click="toggleIndicator(indicator)"
-      >
-        {{ indicator }}
-      </button>
     </div>
     <div class="h-full flex">
       <div class="min-w-0 w-full flex-1">
@@ -219,7 +200,6 @@ watch(
           @chart-price-click="emit('chartPriceClick', $event)"
           :pair-controls="props.pairControls"
           :enabled-ema-periods="enabledEmaPeriods"
-          :enabled-indicators="enabledIndicators"
         />
         <div v-else class="m-auto">
           <UProgress v-if="isLoadingDataset" class="m-5 w-5 h-5" label="Spinning" />

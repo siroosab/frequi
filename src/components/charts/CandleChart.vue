@@ -76,7 +76,6 @@ const props = defineProps<{
   startCandleCount: number;
   pairControls?: PairControlSettings;
   enabledEmaPeriods?: number[];
-  enabledIndicators?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -92,7 +91,6 @@ const brushSummary = ref<{
   tradeCount: number;
   profitRatio: number;
 } | null>(null);
-const brushActive = ref(false);
 
 const isLabelLeft = computed(() => props.labelSide === 'left');
 // Chart default options
@@ -168,17 +166,7 @@ const { formatCandleTooltip } = useCandleChartTooltip(chartOptions);
 
 function clearBrushSelection() {
   brushSummary.value = null;
-  brushActive.value = false;
   candleChart.value?.dispatchAction({ type: 'brush', command: 'clear', areas: [] });
-}
-
-function startBrushSelection() {
-  brushActive.value = true;
-  candleChart.value?.dispatchAction({
-    type: 'takeGlobalCursor',
-    key: 'brush',
-    brushOption: { brushType: 'lineX', brushMode: 'single' },
-  });
 }
 
 function handleBrushSelected(event: unknown) {
@@ -227,7 +215,6 @@ function handleBrushSelected(event: unknown) {
     tradeCount: rangeTrades.length,
     profitRatio: rangeTrades.reduce((total, trade) => total + (trade.profit_ratio ?? 0), 0),
   };
-  brushActive.value = true;
 }
 
 function addLegend(name: string, position: number | undefined = undefined) {
@@ -437,7 +424,7 @@ function updateChart(initial = false) {
 
   if (Array.isArray(options.series) && colClose >= 0) {
     for (const period of props.enabledEmaPeriods ?? []) {
-      if (![7, 14, 50, 100].includes(period)) continue;
+      if (![7, 14, 21, 50, 100, 200].includes(period)) continue;
       const emaValues = calculateEma(dataset, colClose, period);
       options.series.push({
         name: `EMA ${period}`,
@@ -449,36 +436,19 @@ function updateChart(initial = false) {
         smooth: false,
         lineStyle: {
           width: 1.5,
-          color: ({ 7: '#f59e0b', 14: '#22c55e', 50: '#38bdf8', 100: '#a78bfa' } as Record<number, string>)[period],
+          color: (
+            {
+              7: '#f59e0b',
+              14: '#22c55e',
+              21: '#ec4899',
+              50: '#38bdf8',
+              100: '#a78bfa',
+              200: '#f97316',
+            } as Record<number, string>
+          )[period],
         },
       });
       addLegend(`EMA ${period}`);
-    }
-
-    const indicatorColumns: Record<string, string[]> = {
-      RSI: ['rsi'],
-      MACD: ['macd', 'macdsignal'],
-      SMA: ['sma'],
-      'Bollinger Bands': ['bb_upperband', 'bb_lowerband'],
-      ATR: ['atr'],
-      VWAP: ['vwap'],
-    };
-    for (const indicator of props.enabledIndicators ?? []) {
-      for (const columnName of indicatorColumns[indicator] ?? []) {
-        const columnIndex = columns.indexOf(columnName);
-        if (columnIndex < 0) continue;
-        const seriesName = indicator === 'Bollinger Bands' ? `Bollinger ${columnName.includes('upper') ? 'upper' : 'lower'}` : indicator;
-        options.series.push({
-          name: seriesName,
-          type: 'line',
-          xAxisIndex: 0,
-          yAxisIndex: 0,
-          encode: { x: colDate, y: columnIndex },
-          showSymbol: false,
-          lineStyle: { width: 1.5 },
-        });
-        addLegend(seriesName);
-      }
     }
   }
 
@@ -958,13 +928,7 @@ watch([() => props.useUTC, () => props.theme, () => props.plotConfig], () =>
 );
 
 watch(
-  [
-    () => props.dataset,
-    () => props.heikinAshi,
-    () => props.showMarkArea,
-    () => props.enabledEmaPeriods,
-    () => props.enabledIndicators,
-  ],
+  [() => props.dataset, () => props.heikinAshi, () => props.showMarkArea, () => props.enabledEmaPeriods],
   () => updateChart(),
 );
 
@@ -986,26 +950,6 @@ watch(
       @brushselected="handleBrushSelected"
       @brushend="handleBrushSelected"
     />
-    <div class="brush-controls" role="toolbar" aria-label="Chart range selection controls">
-      <button
-        type="button"
-        class="brush-control"
-        :class="{ active: brushActive }"
-        :aria-pressed="brushActive"
-        @click="startBrushSelection"
-      >
-        <span aria-hidden="true">&#8596;</span>
-        Select range
-      </button>
-      <button
-        v-if="brushActive || brushSummary"
-        type="button"
-        class="brush-control brush-control-clear"
-        @click="clearBrushSelection"
-      >
-        Clear
-      </button>
-    </div>
     <div
       v-if="brushSummary"
       class="brush-summary absolute bottom-2 left-2 z-10 rounded-md border px-2 py-1 text-xs"
@@ -1042,60 +986,9 @@ watch(
   color: rgb(19 78 74);
 }
 
-.brush-controls {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 20;
-  display: flex;
-  gap: 0.375rem;
-  align-items: center;
-}
-
-.brush-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 1.75rem;
-  padding: 0.25rem 0.625rem;
-  border: 1px solid rgb(14 116 144);
-  border-radius: 0.375rem;
-  background: rgb(224 242 254 / 0.98);
-  color: rgb(12 74 110);
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.25);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.brush-control:hover,
-.brush-control.active {
-  background: rgb(186 230 253);
-  border-color: rgb(2 132 199);
-}
-
-.brush-control-clear {
-  background: rgb(255 255 255 / 0.98);
-}
-
 :global(.dark) .brush-summary {
   background: rgb(8 47 73 / 0.94);
   border-color: rgb(56 189 248);
   color: rgb(204 251 241);
-}
-
-:global(.dark) .brush-control {
-  border-color: rgb(34 211 238);
-  background: rgb(8 47 73 / 0.98);
-  color: rgb(207 250 254);
-}
-
-:global(.dark) .brush-control:hover,
-:global(.dark) .brush-control.active {
-  background: rgb(14 116 144);
-}
-
-:global(.dark) .brush-control-clear {
-  background: rgb(15 23 42 / 0.98);
 }
 </style>
