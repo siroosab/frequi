@@ -8,8 +8,8 @@
   },
   "rewrites": [
     {
-      "source": "/coinex-api/:path*",
-      "destination": "https://api.coinex.com/:path*"
+      "source": "/coinex-api/v2/futures/kline",
+      "destination": "https://api.coinex.com/v2/futures/kline"
     },
     {
       "source": "/(.*)",
