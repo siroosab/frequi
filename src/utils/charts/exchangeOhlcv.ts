@@ -106,27 +106,21 @@ function coinexMarketSymbol(botPair: string): string {
 }
 
 function normalizeCoinexCandleRow(entry: unknown): [number, number, number, number, number, number] | null {
-  if (Array.isArray(entry) && entry.length >= 6) {
-    const [ts, open, high, low, close, volume] = entry as [unknown, unknown, unknown, unknown, unknown, unknown];
-    const timestamp = Number(ts);
-    if (!Number.isFinite(timestamp)) return null;
-    return [timestamp, Number(open), Number(high), Number(low), Number(close), Number(volume)];
+  if (!entry || typeof entry !== 'object') return null;
+
+  const row = entry as Record<string, unknown>;
+  const timestamp = Number(row.created_at ?? row.time ?? row.ts ?? row.timestamp);
+  const open = Number(row.open ?? row.o);
+  const high = Number(row.high ?? row.h);
+  const low = Number(row.low ?? row.l);
+  const close = Number(row.close ?? row.c);
+  const volume = Number(row.volume ?? row.v ?? 0);
+
+  if (![timestamp, open, high, low, close, volume].every((value) => Number.isFinite(value))) {
+    return null;
   }
 
-  if (entry && typeof entry === 'object') {
-    const row = entry as Record<string, unknown>;
-    const timestamp = Number(row.time ?? row.ts ?? row.timestamp ?? row[0]);
-    if (!Number.isFinite(timestamp)) return null;
-    const open = Number(row.open ?? row.o ?? row[1]);
-    const high = Number(row.high ?? row.h ?? row[2]);
-    const low = Number(row.low ?? row.l ?? row[3]);
-    const close = Number(row.close ?? row.c ?? row[4]);
-    const volume = Number(row.volume ?? row.v ?? row[5]);
-    if ([open, high, low, close, volume].some((value) => !Number.isFinite(value))) return null;
-    return [timestamp, open, high, low, close, volume];
-  }
-
-  return null;
+  return [timestamp, open, high, low, close, volume];
 }
 
 async function fetchCoinexFuturesOhlcv(
@@ -140,12 +134,12 @@ async function fetchCoinexFuturesOhlcv(
   }
 
   const market = coinexMarketSymbol(botPair);
-  const url = new URL('https://api.coinex.com/v2/futures/kline');
-  url.searchParams.set('market', market);
-  url.searchParams.set('period', period);
-  url.searchParams.set('limit', String(Math.min(limit, 1000)));
+  const baseUrl = typeof window !== 'undefined' ? new URL('/coinex-api/v2/futures/kline', window.location.origin) : new URL('http://localhost:3000/coinex-api/v2/futures/kline');
+  baseUrl.searchParams.set('market', market);
+  baseUrl.searchParams.set('period', period);
+  baseUrl.searchParams.set('limit', String(Math.min(limit, 1000)));
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(baseUrl.toString(), {
     method: 'GET',
     headers: {
       Accept: 'application/json',
@@ -157,8 +151,8 @@ async function fetchCoinexFuturesOhlcv(
   }
 
   const payload = await response.json();
-  const rows = Array.isArray(payload) ? payload : payload?.data;
-  if (!Array.isArray(rows)) {
+  const rows = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+  if (!rows.length) {
     throw new Error('CoinEx futures OHLCV response did not contain expected data array');
   }
 
