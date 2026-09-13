@@ -97,7 +97,8 @@ export async function fetchExchangeOhlcv(
   limit = 250,
 ): Promise<PairHistory> {
   const ccxt = await loadCcxtBrowser();
-  const ExchangeClass = ccxt[exchangeId.toLowerCase()];
+  const normalizedExchangeId = exchangeId.toLowerCase();
+  const ExchangeClass = ccxt[normalizedExchangeId];
   if (!ExchangeClass) throw new Error(`Unsupported exchange: ${exchangeId}`);
 
   const exchange = new ExchangeClass({
@@ -105,29 +106,46 @@ export async function fetchExchangeOhlcv(
     options: { defaultType: futures ? 'swap' : 'spot' },
   });
   try {
-    let markets: Record<string, CcxtMarket> | undefined;
-    let market: CcxtMarket | undefined;
+    const directSymbol = exchangeSymbol(botPair);
 
-    try {
-      markets = await exchange.loadMarkets();
-      market = findMarket(markets, botPair, futures);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (exchangeId.toLowerCase() === 'coinex' && isCoinexMetadataFailure(message)) {
-        console.warn('CoinEx metadata lookup failed; continuing with fallback OHLCV symbol resolution.', message);
-      } else {
-        throw error;
-      }
+    if (normalizedExchangeId === 'coinex') {
+      const candles = await exchange.fetchOHLCV(directSymbol, timeframe, undefined, limit);
+      const data = candles.map(([timestamp, open, high, low, close, volume]) => [
+        timestamp,
+        open,
+        high,
+        low,
+        close,
+        volume,
+      ]);
+      const first = data[0]?.[0] ?? Date.now();
+      const last = data[data.length - 1]?.[0] ?? first;
+      const timeframeMs = TIMEFRAME_MS[timeframe] ?? 60_000;
+
+      return {
+        strategy: '',
+        pair: botPair,
+        timeframe,
+        timeframe_ms: timeframeMs,
+        columns: ['__date_ts', 'open', 'high', 'low', 'close', 'volume'],
+        data,
+        annotations: [],
+        length: data.length,
+        buy_signals: 0,
+        sell_signals: 0,
+        last_analyzed: last,
+        data_start_ts: first,
+        data_start: new Date(first).toISOString(),
+        data_stop: new Date(last).toISOString(),
+        data_stop_ts: last,
+      };
     }
 
-    const fallbackSymbol = exchangeSymbol(botPair);
-    const symbol = market?.symbol ?? fallbackSymbol;
+    const markets = await exchange.loadMarkets();
+    const market = findMarket(markets, botPair, futures);
+    if (!market) throw new Error(`Market not found: ${exchangeSymbol(botPair)}`);
 
-    if (!market && exchangeId.toLowerCase() === 'coinex' && !fallbackSymbol) {
-      throw new Error(`Market not found: ${exchangeSymbol(botPair)}`);
-    }
-
-    const candles = await exchange.fetchOHLCV(symbol, timeframe, undefined, limit);
+    const candles = await exchange.fetchOHLCV(market.symbol, timeframe, undefined, limit);
     const data = candles.map(([timestamp, open, high, low, close, volume]) => [
       timestamp,
       open,
