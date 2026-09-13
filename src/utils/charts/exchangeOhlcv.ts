@@ -85,8 +85,112 @@ function findMarket(markets: Record<string, CcxtMarket>, botPair: string, future
   });
 }
 
-function isCoinexMetadataFailure(message: string): boolean {
-  return /all-deposit-withdraw-config|deposit.*withdraw|assets\/all/i.test(message);
+const COINEX_PERIOD_MAP: Record<string, string> = {
+  '1m': '1min',
+  '3m': '3min',
+  '5m': '5min',
+  '15m': '15min',
+  '30m': '30min',
+  '1h': '1hour',
+  '2h': '2hour',
+  '4h': '4hour',
+  '6h': '6hour',
+  '12h': '12hour',
+  '1d': '1day',
+  '3d': '3day',
+  '1w': '1week',
+};
+
+function coinexMarketSymbol(botPair: string): string {
+  return exchangeSymbol(botPair).replace('/', '').toUpperCase();
+}
+
+function normalizeCoinexCandleRow(entry: unknown): [number, number, number, number, number, number] | null {
+  if (Array.isArray(entry) && entry.length >= 6) {
+    const [ts, open, high, low, close, volume] = entry as [unknown, unknown, unknown, unknown, unknown, unknown];
+    const timestamp = Number(ts);
+    if (!Number.isFinite(timestamp)) return null;
+    return [timestamp, Number(open), Number(high), Number(low), Number(close), Number(volume)];
+  }
+
+  if (entry && typeof entry === 'object') {
+    const row = entry as Record<string, unknown>;
+    const timestamp = Number(row.time ?? row.ts ?? row.timestamp ?? row[0]);
+    if (!Number.isFinite(timestamp)) return null;
+    const open = Number(row.open ?? row.o ?? row[1]);
+    const high = Number(row.high ?? row.h ?? row[2]);
+    const low = Number(row.low ?? row.l ?? row[3]);
+    const close = Number(row.close ?? row.c ?? row[4]);
+    const volume = Number(row.volume ?? row.v ?? row[5]);
+    if ([open, high, low, close, volume].some((value) => !Number.isFinite(value))) return null;
+    return [timestamp, open, high, low, close, volume];
+  }
+
+  return null;
+}
+
+async function fetchCoinexFuturesOhlcv(
+  botPair: string,
+  timeframe: string,
+  limit: number,
+): Promise<PairHistory> {
+  const period = COINEX_PERIOD_MAP[timeframe];
+  if (!period) {
+    throw new Error(`Unsupported CoinEx timeframe: ${timeframe}. Supported: ${Object.keys(COINEX_PERIOD_MAP).join(', ')}`);
+  }
+
+  const market = coinexMarketSymbol(botPair);
+  const url = new URL('https://api.coinex.com/v2/futures/kline');
+  url.searchParams.set('market', market);
+  url.searchParams.set('period', period);
+  url.searchParams.set('limit', String(Math.min(limit, 1000)));
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`CoinEx futures OHLCV fetch failed: ${response.status} ${response.statusText}`);
+  }
+
+  const payload = await response.json();
+  const rows = Array.isArray(payload) ? payload : payload?.data;
+  if (!Array.isArray(rows)) {
+    throw new Error('CoinEx futures OHLCV response did not contain expected data array');
+  }
+
+  const data = rows
+    .map((row) => normalizeCoinexCandleRow(row))
+    .filter((row): row is [number, number, number, number, number, number] => row !== null);
+
+  if (!data.length) {
+    throw new Error(`No CoinEx futures OHLCV data returned for ${market} (${period})`);
+  }
+
+  const first = data[0]?.[0] ?? Date.now();
+  const last = data[data.length - 1]?.[0] ?? first;
+  const timeframeMs = TIMEFRAME_MS[timeframe] ?? 60_000;
+
+  return {
+    strategy: '',
+    pair: botPair,
+    timeframe,
+    timeframe_ms: timeframeMs,
+    columns: ['__date_ts', 'open', 'high', 'low', 'close', 'volume'],
+    data,
+    annotations: [],
+    length: data.length,
+    buy_signals: 0,
+    sell_signals: 0,
+    last_analyzed: last,
+    data_start_ts: first,
+    data_start: new Date(first).toISOString(),
+    data_stop: new Date(last).toISOString(),
+    data_stop_ts: last,
+  };
 }
 
 export async function fetchExchangeOhlcv(
@@ -96,8 +200,13 @@ export async function fetchExchangeOhlcv(
   futures: boolean,
   limit = 250,
 ): Promise<PairHistory> {
-  const ccxt = await loadCcxtBrowser();
   const normalizedExchangeId = exchangeId.toLowerCase();
+
+  if (normalizedExchangeId === 'coinex') {
+    return fetchCoinexFuturesOhlcv(botPair, timeframe, limit);
+  }
+
+  const ccxt = await loadCcxtBrowser();
   const ExchangeClass = ccxt[normalizedExchangeId];
   if (!ExchangeClass) throw new Error(`Unsupported exchange: ${exchangeId}`);
 
@@ -106,41 +215,6 @@ export async function fetchExchangeOhlcv(
     options: { defaultType: futures ? 'swap' : 'spot' },
   });
   try {
-    const directSymbol = exchangeSymbol(botPair);
-
-    if (normalizedExchangeId === 'coinex') {
-      const candles = await exchange.fetchOHLCV(directSymbol, timeframe, undefined, limit);
-      const data = candles.map(([timestamp, open, high, low, close, volume]) => [
-        timestamp,
-        open,
-        high,
-        low,
-        close,
-        volume,
-      ]);
-      const first = data[0]?.[0] ?? Date.now();
-      const last = data[data.length - 1]?.[0] ?? first;
-      const timeframeMs = TIMEFRAME_MS[timeframe] ?? 60_000;
-
-      return {
-        strategy: '',
-        pair: botPair,
-        timeframe,
-        timeframe_ms: timeframeMs,
-        columns: ['__date_ts', 'open', 'high', 'low', 'close', 'volume'],
-        data,
-        annotations: [],
-        length: data.length,
-        buy_signals: 0,
-        sell_signals: 0,
-        last_analyzed: last,
-        data_start_ts: first,
-        data_start: new Date(first).toISOString(),
-        data_stop: new Date(last).toISOString(),
-        data_stop_ts: last,
-      };
-    }
-
     const markets = await exchange.loadMarkets();
     const market = findMarket(markets, botPair, futures);
     if (!market) throw new Error(`Market not found: ${exchangeSymbol(botPair)}`);
