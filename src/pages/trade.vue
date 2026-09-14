@@ -26,7 +26,13 @@ const chartTimeframe = computed(() => {
 });
 
 const chartPair = computed(() => {
-  return botStore.activeBot.plotMultiPairs[0] || botStore.activeBot.whitelist[0] || '';
+  return (
+    botStore.activeBot.plotMultiPairs[0] ||
+    botStore.activeBot.selectedPair ||
+    botStore.activeBot.whitelist[0] ||
+    botStore.activeBot.openTrades[0]?.pair ||
+    ''
+  );
 });
 
 async function loadChartPairControls(pair: string) {
@@ -200,7 +206,19 @@ async function handleOkxFuturesChange(enabled: boolean) {
   showAlert('Primary exchange candles restored.', 'success');
 }
 
-watch(chartPair, loadChartPairControls, { immediate: true });
+watch(
+  chartPair,
+  (pair) => {
+    if (pair && botStore.activeBot.plotMultiPairs.length === 0) {
+      botStore.activeBot.plotMultiPairs = [pair];
+    }
+    if (pair && !botStore.activeBot.selectedPair) {
+      botStore.activeBot.selectedPair = pair;
+    }
+    void loadChartPairControls(pair);
+  },
+  { immediate: true },
+);
 
 const tradingTabItems = computed<TabsItem[]>(() => {
   const showText = settingsStore.multiPaneButtonsShowText;

@@ -587,6 +587,12 @@ export function createBotSubStore(botId: string, botName: string) {
         });
         pairlist.value = data.pairs;
         pairlistWithTimeframe.value = data.pair_interval;
+        if (pairlist.value.length > 0 && !selectedPair.value) {
+          selectedPair.value = pairlist.value[0];
+        }
+        if (pairlist.value.length > 0 && plotMultiPairs.value.length === 0) {
+          plotMultiPairs.value = [pairlist.value[0]];
+        }
         return Promise.resolve(data);
       } catch (error) {
         console.error(error);
@@ -700,6 +706,12 @@ export function createBotSubStore(botId: string, botName: string) {
         const { data } = await api.get<WhitelistResponse>('/whitelist');
         whitelist.value = data.whitelist;
         pairlistMethods.value = data.method;
+        if (whitelist.value.length > 0 && !selectedPair.value) {
+          selectedPair.value = whitelist.value[0];
+        }
+        if (whitelist.value.length > 0 && plotMultiPairs.value.length === 0) {
+          plotMultiPairs.value = [whitelist.value[0]];
+        }
         return Promise.resolve(data);
       } catch (error) {
         return Promise.reject(error);
