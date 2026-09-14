@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PairControlSettings } from '@/types';
 import type { TabsItem } from '@nuxt/ui';
+import { buildExchangeFallbackChain } from '@/utils/charts/exchangeFallback';
 import { isHigherTimeframe } from '@/utils/charts/exchangeOhlcv';
 
 const botStore = useBotStore();
@@ -41,6 +42,52 @@ function handleChartPriceClick(price: number) {
   window.dispatchEvent(new CustomEvent('chart-price-selected', { detail: price }));
 }
 
+async function tryFallbackExchangeDataLoad(
+  pair: string,
+  timeframe: string,
+  primaryExchange: string,
+  futures = true,
+): Promise<boolean> {
+  const exchangeOrder = buildExchangeFallbackChain(primaryExchange);
+  const exchangeSequence = [...new Set(exchangeOrder.filter(Boolean))];
+
+  for (const [index, exchangeId] of exchangeSequence.entries()) {
+    const loaded = await botStore.activeBot.getExchangePairCandles(pair, timeframe, exchangeId, futures);
+    if (loaded) {
+      if (index > 0) {
+        const fallbackLabel = exchangeId.toUpperCase();
+        if (exchangeId === 'binance') {
+          showAlert(`Primary exchange failed. Loading Binance as fallback.`, 'warning');
+        } else if (exchangeId === 'okx') {
+          showAlert(`Binance fallback failed. Loading OKX as final fallback.`, 'warning');
+        }
+        if (fallbackLabel === 'BINANCE') {
+          binanceFuturesEnabled.value = true;
+          okxFuturesEnabled.value = false;
+        } else if (fallbackLabel === 'OKX') {
+          okxFuturesEnabled.value = true;
+          binanceFuturesEnabled.value = false;
+        }
+      }
+      return true;
+    }
+
+    if (index === 0) {
+      const primaryLabel = primaryExchange.toUpperCase() || 'Primary exchange';
+      if (exchangeOrder.includes('binance') && exchangeOrder[0] !== 'binance') {
+        showAlert(`Primary exchange ${primaryLabel} failed. Loading Binance as fallback.`, 'warning');
+      }
+      continue;
+    }
+
+    if (exchangeId === 'binance' && exchangeOrder.includes('okx')) {
+      showAlert('Binance fallback failed. Loading OKX as final fallback.', 'warning');
+    }
+  }
+
+  return false;
+}
+
 function refreshOHLCV(pair: string, columns: string[]) {
   if (binanceFuturesEnabled.value) {
     void botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value, 'binance', true);
@@ -51,7 +98,7 @@ function refreshOHLCV(pair: string, columns: string[]) {
     return;
   }
   if (isHigherTimeframe(chartTimeframe.value, botStore.activeBot.timeframe)) {
-    botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value);
+    void tryFallbackExchangeDataLoad(pair, chartTimeframe.value, botStore.activeBot.botState.exchange ?? '', true);
     return;
   }
   botStore.activeBot.getPairCandles({
@@ -82,8 +129,23 @@ async function handleBinanceFuturesChange(enabled: boolean) {
     );
     if (loaded) {
       showAlert('Binance Futures candles loaded successfully.', 'success');
+      return;
+    }
+
+    showAlert('Binance fallback failed. Loading OKX as final fallback.', 'warning');
+    okxFuturesEnabled.value = true;
+    binanceFuturesEnabled.value = false;
+    const okxLoaded = await botStore.activeBot.getExchangePairCandles(
+      chartPair.value,
+      chartTimeframe.value,
+      'okx',
+      true,
+    );
+    if (okxLoaded) {
+      showAlert('OKX Futures candles loaded successfully.', 'success');
     } else {
-      binanceFuturesEnabled.value = false;
+      okxFuturesEnabled.value = false;
+      showAlert('Unable to load fallback OHLCV from Binance or OKX.', 'error');
     }
     return;
   }
@@ -113,8 +175,23 @@ async function handleOkxFuturesChange(enabled: boolean) {
     );
     if (loaded) {
       showAlert('OKX Futures candles loaded successfully.', 'success');
+      return;
+    }
+
+    showAlert('OKX fallback failed. Loading Binance as final fallback.', 'warning');
+    binanceFuturesEnabled.value = true;
+    okxFuturesEnabled.value = false;
+    const binanceLoaded = await botStore.activeBot.getExchangePairCandles(
+      chartPair.value,
+      chartTimeframe.value,
+      'binance',
+      true,
+    );
+    if (binanceLoaded) {
+      showAlert('Binance Futures candles loaded successfully.', 'success');
     } else {
-      okxFuturesEnabled.value = false;
+      binanceFuturesEnabled.value = false;
+      showAlert('Unable to load fallback OHLCV from OKX or Binance.', 'error');
     }
     return;
   }

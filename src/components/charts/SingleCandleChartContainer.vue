@@ -180,7 +180,7 @@ watch(
         :key="period"
         type="button"
         class="rounded border px-1.5 py-0.5"
-        :class="enabledEmaPeriods.includes(period) ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
+        :class="enabledEmaPeriods.includes(period) ? 'border-primary bg-primary/15 text-primary' : 'border-default bg-default text-muted'"
         :aria-pressed="enabledEmaPeriods.includes(period)"
         :title="`Toggle EMA ${period}. Shows the exponential moving average over ${period} candles on the current timeframe.`"
         @click="toggleEma(period)"
@@ -190,7 +190,7 @@ watch(
       <button
         type="button"
         class="rounded border px-1.5 py-0.5"
-        :class="binanceFuturesEnabled ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
+        :class="binanceFuturesEnabled ? 'border-amber-500 bg-amber-500/10 text-amber-700 dark:border-amber-400 dark:text-amber-300' : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-slate-800 dark:text-amber-300'"
         :aria-pressed="binanceFuturesEnabled"
         :disabled="binanceFuturesDisabled"
         :title="binanceFuturesDisabled ? 'Binance is already the primary exchange, so no alternate data source is needed.' : 'Toggle Binance Futures candles instead of the primary exchange candles for this chart.'"
@@ -201,7 +201,7 @@ watch(
       <button
         type="button"
         class="rounded border px-1.5 py-0.5"
-        :class="okxFuturesEnabled ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
+        :class="okxFuturesEnabled ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300' : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-slate-800 dark:text-emerald-300'"
         :aria-pressed="okxFuturesEnabled"
         :disabled="okxFuturesDisabled"
         :title="okxFuturesDisabled ? 'OKX is already the primary exchange, so no alternate data source is needed.' : 'Toggle OKX Futures candles instead of the primary exchange candles for this chart.'"
