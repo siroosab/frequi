@@ -9,4 +9,4 @@ services:
     image: freqtradeorg/frequi:latest
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "8088:80"

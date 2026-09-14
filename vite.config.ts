@@ -107,8 +107,12 @@ export default defineConfig(({ mode }) => {
         rewrite: (path) => path.replace(/^\/coinex-api/, ''),
       },
     },
-    host: '127.0.0.1',
-    port: 3000,
+    host: env.VITE_HOST || env.FREQUI_HOST || '0.0.0.0',
+    port: Number(env.PORT || 3000),
+  },
+  preview: {
+    host: env.VITE_HOST || env.FREQUI_HOST || '0.0.0.0',
+    port: Number(env.PORT || 4173),
   },
   test: {
     environment: 'happy-dom',
