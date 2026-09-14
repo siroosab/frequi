@@ -147,11 +147,28 @@ async function fetchCoinexFuturesOhlcv(
   });
 
   if (!response.ok) {
-    throw new Error(`CoinEx futures OHLCV fetch failed: ${response.status} ${response.statusText}`);
+    const text = await response.text();
+    throw new Error(
+      `CoinEx futures OHLCV fetch failed: ${response.status} ${response.statusText}${text ? ` — ${text.slice(0, 200)}` : ''}`,
+    );
   }
 
-  const payload = await response.json();
-  const rows = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+  const text = await response.text();
+  let payload: unknown = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`CoinEx futures response was not valid JSON: ${message}. Body: ${text.slice(0, 300)}`);
+    }
+  }
+
+  const rows = Array.isArray((payload as { data?: unknown })?.data)
+    ? (payload as { data: unknown[] }).data
+    : Array.isArray(payload)
+      ? payload
+      : [];
   if (!rows.length) {
     throw new Error('CoinEx futures OHLCV response did not contain expected data array');
   }
