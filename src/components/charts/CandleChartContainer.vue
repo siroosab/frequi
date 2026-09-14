@@ -14,6 +14,8 @@ const props = withDefaults(
     pairControls?: PairControlSettings;
     binanceFuturesEnabled?: boolean;
     binanceFuturesDisabled?: boolean;
+    okxFuturesEnabled?: boolean;
+    okxFuturesDisabled?: boolean;
   }>(),
   {
     trades: () => [],
@@ -28,6 +30,7 @@ const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
   chartPriceClick: [price: number];
   binanceFuturesChange: [enabled: boolean];
+  okxFuturesChange: [enabled: boolean];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -219,9 +222,12 @@ const singlePairSelection = computed({
           :is-single-pair-view="isSinglePairView"
           :binance-futures-enabled="props.binanceFuturesEnabled"
           :binance-futures-disabled="props.binanceFuturesDisabled"
+          :okx-futures-enabled="props.okxFuturesEnabled"
+          :okx-futures-disabled="props.okxFuturesDisabled"
           @refresh-data="refresh()"
           @chart-price-click="emit('chartPriceClick', $event)"
           @binance-futures-change="emit('binanceFuturesChange', $event)"
+          @okx-futures-change="emit('okxFuturesChange', $event)"
           :pair-controls="props.pairControls"
         >
         </SingleCandleChartContainer>

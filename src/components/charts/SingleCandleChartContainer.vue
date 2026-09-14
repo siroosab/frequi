@@ -14,6 +14,8 @@ const props = withDefaults(
     pairControls?: PairControlSettings;
     binanceFuturesEnabled?: boolean;
     binanceFuturesDisabled?: boolean;
+    okxFuturesEnabled?: boolean;
+    okxFuturesDisabled?: boolean;
   }>(),
   {
     trades: () => [],
@@ -28,6 +30,7 @@ const emit = defineEmits<{
   refreshData: [pair: string, columns: string[]];
   chartPriceClick: [price: number];
   binanceFuturesChange: [enabled: boolean];
+  okxFuturesChange: [enabled: boolean];
 }>();
 
 const settingsStore = useSettingsStore();
@@ -187,7 +190,6 @@ watch(
       <button
         type="button"
         class="rounded border px-1.5 py-0.5"
-        
         :class="binanceFuturesEnabled ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
         :aria-pressed="binanceFuturesEnabled"
         :disabled="binanceFuturesDisabled"
@@ -195,6 +197,17 @@ watch(
         @click="emit('binanceFuturesChange', !binanceFuturesEnabled)"
       >
         Binance Futures
+      </button>
+      <button
+        type="button"
+        class="rounded border px-1.5 py-0.5"
+        :class="okxFuturesEnabled ? 'border-primary bg-primary/15 text-primary' : 'border-default text-muted'"
+        :aria-pressed="okxFuturesEnabled"
+        :disabled="okxFuturesDisabled"
+        :title="okxFuturesDisabled ? 'OKX is already the primary exchange, so no alternate data source is needed.' : 'Toggle OKX Futures candles instead of the primary exchange candles for this chart.'"
+        @click="emit('okxFuturesChange', !okxFuturesEnabled)"
+      >
+        OKX Futures
       </button>
     </div>
     <div class="h-full flex">
@@ -218,6 +231,8 @@ watch(
           :enabled-ema-periods="enabledEmaPeriods"
           :binance-futures-enabled="binanceFuturesEnabled"
           :binance-futures-disabled="binanceFuturesDisabled"
+          :okx-futures-enabled="okxFuturesEnabled"
+          :okx-futures-disabled="okxFuturesDisabled"
         />
         <div v-else class="m-auto">
           <UProgress v-if="isLoadingDataset" class="m-5 w-5 h-5" label="Spinning" />

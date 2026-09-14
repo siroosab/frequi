@@ -9,8 +9,12 @@ const chartStore = useChartConfigStore();
 const lowerPanelsOpen = ref(false);
 const chartPairControls = ref<PairControlSettings>();
 const binanceFuturesEnabled = ref(false);
+const okxFuturesEnabled = ref(false);
 const isPrimaryBinance = computed(
   () => botStore.activeBot.botState.exchange?.toLowerCase() === 'binance',
+);
+const isPrimaryOkx = computed(
+  () => botStore.activeBot.botState.exchange?.toLowerCase() === 'okx',
 );
 
 const chartTimeframe = computed(() => {
@@ -42,6 +46,10 @@ function refreshOHLCV(pair: string, columns: string[]) {
     void botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value, 'binance', true);
     return;
   }
+  if (okxFuturesEnabled.value) {
+    void botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value, 'okx', true);
+    return;
+  }
   if (isHigherTimeframe(chartTimeframe.value, botStore.activeBot.timeframe)) {
     botStore.activeBot.getExchangePairCandles(pair, chartTimeframe.value);
     return;
@@ -60,6 +68,9 @@ async function handleBinanceFuturesChange(enabled: boolean) {
   }
 
   binanceFuturesEnabled.value = enabled;
+  if (enabled) {
+    okxFuturesEnabled.value = false;
+  }
   if (!chartPair.value) return;
 
   if (enabled) {
@@ -73,6 +84,37 @@ async function handleBinanceFuturesChange(enabled: boolean) {
       showAlert('Binance Futures candles loaded successfully.', 'success');
     } else {
       binanceFuturesEnabled.value = false;
+    }
+    return;
+  }
+
+  refreshOHLCV(chartPair.value, []);
+  showAlert('Primary exchange candles restored.', 'success');
+}
+
+async function handleOkxFuturesChange(enabled: boolean) {
+  if (isPrimaryOkx.value) {
+    showAlert('OKX is already the primary exchange.', 'info');
+    return;
+  }
+
+  okxFuturesEnabled.value = enabled;
+  if (enabled) {
+    binanceFuturesEnabled.value = false;
+  }
+  if (!chartPair.value) return;
+
+  if (enabled) {
+    const loaded = await botStore.activeBot.getExchangePairCandles(
+      chartPair.value,
+      chartTimeframe.value,
+      'okx',
+      true,
+    );
+    if (loaded) {
+      showAlert('OKX Futures candles loaded successfully.', 'success');
+    } else {
+      okxFuturesEnabled.value = false;
     }
     return;
   }
@@ -203,8 +245,11 @@ const tradingTabItems = computed<TabsItem[]>(() => {
             @refresh-data="refreshOHLCV"
             @chart-price-click="handleChartPriceClick"
             @binance-futures-change="handleBinanceFuturesChange"
+            @okx-futures-change="handleOkxFuturesChange"
             :binance-futures-enabled="binanceFuturesEnabled"
             :binance-futures-disabled="isPrimaryBinance"
+            :okx-futures-enabled="okxFuturesEnabled"
+            :okx-futures-disabled="isPrimaryOkx"
           >
           </CandleChartContainer>
       </DraggableContainer>
